@@ -6,6 +6,7 @@ import { ActionCard } from "@/components/action-card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ResumeBuilderModal } from "@/components/resume-builder/resume-builder-modal"
+import { CoverLetterModal } from "@/components/cover-letter/cover-letter-modal"
 
 export default function Home() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
@@ -63,14 +64,26 @@ export default function Home() {
            </div>
 
            <div className="flex justify-end mt-8">
-             <ResumeBuilderModal>
-               <Button 
-                  className={cn("gap-2 h-12 px-6 rounded-xl transition-colors", selectedColorClass)}
-                  variant={selectedOption ? "default" : "outline"}
-               >
-                 Continue <ArrowRight className="h-4 w-4" />
-               </Button>
-             </ResumeBuilderModal>
+             {selectedOption === "cover-letter" ? (
+               <CoverLetterModal>
+                 <Button 
+                    className={cn("gap-2 h-12 px-6 rounded-xl transition-colors", selectedColorClass)}
+                    variant={selectedOption ? "default" : "outline"}
+                 >
+                   Continue <ArrowRight className="h-4 w-4" />
+                 </Button>
+               </CoverLetterModal>
+             ) : (
+               <ResumeBuilderModal>
+                 <Button 
+                    className={cn("gap-2 h-12 px-6 rounded-xl transition-colors", selectedColorClass)}
+                    variant={selectedOption ? "default" : "outline"}
+                    disabled={!selectedOption}
+                 >
+                   Continue <ArrowRight className="h-4 w-4" />
+                 </Button>
+               </ResumeBuilderModal>
+             )}
            </div>
        </div>
     </div>
