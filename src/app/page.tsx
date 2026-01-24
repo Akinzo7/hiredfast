@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ResumeBuilderModal } from "@/components/resume-builder/resume-builder-modal"
 import { CoverLetterModal } from "@/components/cover-letter/cover-letter-modal"
+import { ResumeBuilderProvider } from "@/hooks/use-resume-builder"
 
 export default function Home() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
