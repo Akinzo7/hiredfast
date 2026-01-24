@@ -61,6 +61,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const { resumeData } = useResumeBuilder()
   const [open, setOpen] = useState(false)
   const [jobDescription, setJobDescription] = useState("")
+  const [jobDescriptionInput, setJobDescriptionInput] = useState("")
   const [resumeSource, setResumeSource] = useState("current")
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -106,26 +107,63 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     (value: string) => setJobDescription(value),
     300 // 300ms delay
   );
+
+  const handleJobDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setJobDescriptionInput(value);
+    debouncedSetJobDescription(value);
+  }
   
   const previewRef = useRef<HTMLDivElement>(null)
   
-  const charCount = jobDescription.length
+  const charCount = jobDescriptionInput.length
   const isGenerateDisabled = charCount < 50 || isGenerating
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    
+    // Always clear input value to allow re-uploading same file if failed
+    if (event.target) {
+        event.target.value = ""; 
+    }
+
     if (!file) return;
     
     // Prevent concurrent processing
     if (isProcessingFile) {
+      setFileError("Please wait, currently processing a file.");
       return;
+    }
+
+    // Validate File Type
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const validExtensions = ['.pdf', '.docx'];
+    const isValidType = validTypes.includes(file.type) || validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+    if (!isValidType) {
+        setFileError("Invalid file type. Please upload PDF or DOCX.");
+        setResumeSource("current");
+        return;
+    }
+
+    // Validate File Size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        setFileError("File too large. Maximum size is 10MB.");
+        setResumeSource("current");
+        return;
     }
     
     setIsProcessingFile(true);
     setFileError(null);
+    setUploadedFile(null);
     
     try {
       const text = await extractTextFromFile(file);
+      
+      if (!text || text.trim().length < 50) {
+          throw new Error("Could not extract enough text from file. The document might be scanned/image-based.");
+      }
+
       setUploadedFile(file);
       setUploadedText(text);
       setResumeSource("upload");
@@ -133,6 +171,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       setFileError(err instanceof Error ? err.message : "Failed to process file");
       setUploadedFile(null);
       setUploadedText("");
+      setResumeSource("current");
     } finally {
       setIsProcessingFile(false);
     }
@@ -146,7 +185,10 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     setResumeSource("current")
   }
 
-  const handleUploadClick = () => fileInputRef.current?.click()
+  const handleUploadClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    fileInputRef.current?.click()
+  }
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -271,8 +313,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     placeholder="Paste the job description here..."
                     rows={12}
                     className="resize-none overflow-y-auto focus-visible:ring-blue-600 bg-white"
-                    defaultValue={jobDescription}
-                    onChange={(e) => debouncedSetJobDescription(e.target.value)}
+                    value={jobDescriptionInput}
+                    onChange={handleJobDescriptionChange}
                   />
                 </div>
 

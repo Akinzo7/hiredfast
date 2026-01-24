@@ -2,29 +2,55 @@ import mammoth from 'mammoth';
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
-    const pdfjsLib = await import('pdfjs-dist');
+    let pdfjsLib;
+    try {
+      pdfjsLib = await import('pdfjs-dist');
+    } catch (e) {
+      console.error("Import error:", e);
+      throw new Error("Failed to load PDF parser. Please check your internet connection.");
+    }
     
     if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      // Use hardcoded version matching package.json to ensure worker compatibility.
+      // using unpkg as it mirrors npm versions reliably.
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.js`;
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let pdf;
+    try {
+        pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    } catch (loadError) {
+        throw new Error("Detailed PDF Load Error: File corrupted or encrypted.");
+    }
     
     let fullText = '';
     
     for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n';
+      try {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .filter((s: string) => s.trim().length > 0)
+          .join(' ');
+          
+        fullText += pageText + '\n';
+      } catch (pageErr) {
+        console.warn(`Skipping page ${i} due to error`, pageErr);
+      }
+    }
+    
+    if (fullText.trim().length === 0) {
+        throw new Error("Extracted text is empty. The PDF might be an image scan. Please use a DOCX or text-based PDF.");
     }
     
     return fullText.trim();
   } catch (error) {
     console.error('Error extracting PDF text:', error);
+    if (error instanceof Error) throw error; 
     throw new Error('Failed to extract text from PDF. Please ensure the file is a valid PDF.');
   }
 }

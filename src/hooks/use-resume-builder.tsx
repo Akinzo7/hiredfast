@@ -84,11 +84,18 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData)
   const [isLoaded, setIsLoaded] = useState(false)
 
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   // Load from LocalStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     try {
+      // Test storage availability
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+
       const savedData = localStorage.getItem("hiredfast_resume_data");
       if (savedData) {
         const parsed = JSON.parse(savedData);
@@ -96,7 +103,7 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
         setResumeData({ ...initialResumeData, ...parsed });
       }
     } catch (error) {
-      console.error("Failed to load resume data:", error);
+      console.warn("LocalStorage access denied or unavailable. Running in in-memory mode.", error);
     } finally {
       setIsLoaded(true);
     }
@@ -108,8 +115,15 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
     
     try {
       localStorage.setItem("hiredfast_resume_data", JSON.stringify(resumeData));
+      setSaveError(null);
     } catch (error) {
       console.error("Failed to save resume data:", error);
+      // specific check for quota exceeded could go here
+      if (error instanceof Error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+         setSaveError("Storage full. Changes are not saved.");
+      } else {
+         setSaveError("Storage unavailable.");
+      }
     }
   }, [resumeData, isLoaded]);
 

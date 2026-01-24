@@ -290,7 +290,7 @@ function renderLayout(templateId: string, data: ResumeData) {
                                 <div key={i} className="relative pl-4 border-l-2 border-slate-100">
                                     <div className="flex justify-between items-baseline mb-1">
                                         <h4 className="font-bold text-lg">{exp.role}</h4>
-                                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded">{formatDate(exp.startDate)} - {formatDate(exp.endDate || 'Present')}</span>
+                                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded">{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
                                     </div>
                                     <div className="text-sm font-medium text-slate-600 mb-2">{exp.company}</div>
                                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{exp.achievements}</p>
@@ -376,7 +376,7 @@ function renderLayout(templateId: string, data: ResumeData) {
                                 <div key={i} className="text-sm">
                                     <div className="flex justify-between font-bold text-base">
                                         <span>{exp.company}</span>
-                                        <span>{formatDate(exp.startDate)} - {formatDate(exp.endDate || 'Present')}</span>
+                                        <span>{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
                                     </div>
                                     <div className="italic text-sm mb-2">{exp.role}</div>
                                     <ul className="list-disc list-outside ml-4 text-sm space-y-1">
@@ -501,7 +501,7 @@ function renderLayout(templateId: string, data: ResumeData) {
                                   {data.workExperience.map((exp, i) => (
                                       <div key={i}>
                                           <h4 className="text-lg font-bold">{exp.role}</h4>
-                                          <div className="text-sm text-slate-500 mb-2">{exp.company} | {formatDate(exp.startDate)} - {formatDate(exp.endDate)}</div>
+                                          <div className="text-sm text-slate-500 mb-2">{exp.company} | {formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</div>
                                           <p className="text-sm leading-relaxed">{exp.achievements}</p>
                                       </div>
                                   ))}
@@ -665,7 +665,7 @@ function renderLayout(templateId: string, data: ResumeData) {
                                 <div key={i}>
                                     <div className="flex justify-between items-baseline">
                                         <h4 className="font-bold text-base">{exp.role} at {exp.company}</h4>
-                                        <span className="text-xs text-slate-400 font-mono">{formatDate(exp.startDate)} - {formatDate(exp.endDate)}</span>
+                                        <span className="text-xs text-slate-400 font-mono">{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
                                     </div>
                                     <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">{exp.achievements}</p>
                                 </div>

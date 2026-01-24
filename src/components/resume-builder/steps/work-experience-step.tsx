@@ -113,7 +113,8 @@ export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps
                                         return {
                                             ...i,
                                             current: isChecked,
-                                            endDate: isChecked ? "Present" : ""
+                                            // Bug Fix #5: Preserve separate endDate value even when current is checked
+                                            // Logic elsewhere (Preview) should prioritize 'current' flag
                                         };
                                     }
                                     return i;
