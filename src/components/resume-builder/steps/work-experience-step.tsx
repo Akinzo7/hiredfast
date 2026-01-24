@@ -13,11 +13,7 @@ interface WorkExperienceStepProps {
 
 export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps) {
   
-  const isValidMonthYear = (value: string): boolean => {
-    if (!value.trim()) return true; // Empty is ok
-    const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
-    return regex.test(value);
-  };
+
   
   const addExperience = () => {
     updateData([
@@ -91,37 +87,19 @@ export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps
                 <div className="space-y-2">
                   <Label>Start Date</Label>
                   <Input 
+                    type="date"
                     value={item.startDate}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      updateExperience(item.id, 'startDate', value);
-                    }}
-                    onBlur={(e) => {
-                      const value = e.target.value;
-                      if (value && !isValidMonthYear(value)) {
-                        // Optionally show error or auto-correct
-                        alert('Please use MM/YYYY format (e.g., 01/2024)');
-                      }
-                    }}
-                    placeholder="MM/YYYY"
-                    className={!isValidMonthYear(item.startDate) && item.startDate ? 'border-red-500' : ''}
+                    onChange={(e) => updateExperience(item.id, 'startDate', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>End Date</Label>
                   <div className="space-y-3">
                     <Input 
+                        type="date"
                         value={item.endDate}
                         onChange={(e) => updateExperience(item.id, 'endDate', e.target.value)}
-                        onBlur={(e) => {
-                          const value = e.target.value;
-                          if (value && !isValidMonthYear(value)) {
-                            alert('Please use MM/YYYY format (e.g., 01/2024)');
-                          }
-                        }}
-                        placeholder="MM/YYYY"
                         disabled={item.current}
-                        className={!isValidMonthYear(item.endDate) && item.endDate ? 'border-red-500' : ''}
                     />
                     <div className="flex items-center space-x-2">
                         <Checkbox 

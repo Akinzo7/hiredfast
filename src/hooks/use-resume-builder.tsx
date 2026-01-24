@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, createContext, useContext, ReactNode } from "react"
 
 export type ResumeData = {
   personalInfo: {
@@ -11,6 +11,7 @@ export type ResumeData = {
     portfolio: string
     address: string
   }
+  summary: string
   workExperience: Array<{
     id: string
     company: string
@@ -40,10 +41,12 @@ export type ResumeData = {
   languages: Array<{ id: string; name: string; proficiency: string }>
   certifications: Array<{ id: string; name: string; issuer: string; year: string }>
   associations: Array<{ id: string; name: string; role: string }>
+  customSections: Array<{ id: string; title: string; content: string }>
 }
 
 const initialResumeData: ResumeData = {
   personalInfo: { fullName: "", email: "", phone: "", linkedin: "", portfolio: "", address: "" },
+  summary: "",
   workExperience: [],
   education: [],
   skills: { technical: "", soft: "" },
@@ -51,9 +54,32 @@ const initialResumeData: ResumeData = {
   languages: [],
   certifications: [],
   associations: [],
+  customSections: [],
 }
 
-export function useResumeBuilder() {
+interface ResumeBuilderContextType {
+  currentStep: number
+  totalSteps: number
+  resumeData: ResumeData
+  isLoaded: boolean
+  nextStep: () => void
+  prevStep: () => void
+  goToStep: (step: number) => void
+  updatePersonalInfo: (data: Partial<ResumeData["personalInfo"]>) => void
+  setSummary: (summary: string) => void
+  setWorkExperience: (data: ResumeData["workExperience"]) => void
+  setEducation: (data: ResumeData["education"]) => void
+  setSkills: (data: Partial<ResumeData["skills"]>) => void
+  setProjects: (data: ResumeData["projects"]) => void
+  setLanguages: (data: ResumeData["languages"]) => void
+  setCertifications: (data: ResumeData["certifications"]) => void
+  setAssociations: (data: ResumeData["associations"]) => void
+  setCustomSections: (data: ResumeData["customSections"]) => void
+}
+
+const ResumeBuilderContext = createContext<ResumeBuilderContextType | undefined>(undefined)
+
+export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -65,7 +91,9 @@ export function useResumeBuilder() {
     try {
       const savedData = localStorage.getItem("hiredfast_resume_data");
       if (savedData) {
-        setResumeData(JSON.parse(savedData));
+        const parsed = JSON.parse(savedData);
+        // Merge with initial data to ensure new fields (like customSections) are present
+        setResumeData({ ...initialResumeData, ...parsed });
       }
     } catch (error) {
       console.error("Failed to load resume data:", error);
@@ -82,7 +110,6 @@ export function useResumeBuilder() {
       localStorage.setItem("hiredfast_resume_data", JSON.stringify(resumeData));
     } catch (error) {
       console.error("Failed to save resume data:", error);
-      // Could show toast notification to user
     }
   }, [resumeData, isLoaded]);
 
@@ -90,7 +117,6 @@ export function useResumeBuilder() {
     setResumeData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, ...data } }))
   }
 
-  // Generic updater for array fields would be nice, but explicit ones are safer for now
   const setWorkExperience = (data: ResumeData["workExperience"]) => {
     setResumeData((prev) => ({ ...prev, workExperience: data }))
   }
@@ -119,13 +145,20 @@ export function useResumeBuilder() {
     setResumeData((prev) => ({ ...prev, associations: data }))
   }
 
-  const totalSteps = 7
+  const setSummary = (summary: string) => {
+    setResumeData((prev) => ({ ...prev, summary }))
+  }
 
+  const setCustomSections = (data: ResumeData["customSections"]) => {
+    setResumeData((prev) => ({ ...prev, customSections: data }))
+  }
+
+  const totalSteps = 7
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, totalSteps))
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1))
   const goToStep = (step: number) => setCurrentStep(Math.max(1, Math.min(step, totalSteps)))
 
-  return {
+  const value = {
     currentStep,
     totalSteps,
     resumeData,
@@ -134,6 +167,7 @@ export function useResumeBuilder() {
     prevStep,
     goToStep,
     updatePersonalInfo,
+    setSummary,
     setWorkExperience,
     setEducation,
     setSkills,
@@ -141,5 +175,22 @@ export function useResumeBuilder() {
     setLanguages,
     setCertifications,
     setAssociations,
+    setCustomSections,
   }
+
+  const ContextProvider = ResumeBuilderContext.Provider;
+
+  return (
+    <ContextProvider value={value}>
+      {children}
+    </ContextProvider>
+  )
+}
+
+export function useResumeBuilder() {
+  const context = useContext(ResumeBuilderContext)
+  if (context === undefined) {
+    throw new Error("useResumeBuilder must be used within a ResumeBuilderProvider")
+  }
+  return context
 }

@@ -1,6 +1,4 @@
-"use client"
-
-import { useResumeBuilder } from "@/hooks/use-resume-builder"
+import { ResumeBuilderProvider, useResumeBuilder } from "@/hooks/use-resume-builder"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
@@ -22,6 +20,21 @@ interface ResumeBuilderModalProps {
 }
 
 export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuilderModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0">
+         <ResumeBuilderProvider>
+            <ResumeBuilderContent />
+         </ResumeBuilderProvider>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ResumeBuilderContent() {
   const { 
     currentStep, 
     totalSteps, 
@@ -77,11 +90,7 @@ export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuild
   ]
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0">
+    <>
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <div className="flex items-center justify-between mb-2 pr-8">
              <DialogTitle className="text-xl">Resume Builder</DialogTitle>
@@ -110,12 +119,17 @@ export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuild
                  Skip
                </Button>
              )}
-             <Button onClick={nextStep}>
+             <Button onClick={() => {
+               if (currentStep === totalSteps) {
+                 window.location.href = "/resume/editor"
+               } else {
+                 nextStep()
+               }
+             }}>
                {currentStep === totalSteps ? "Finish" : "Next"}
              </Button>
            </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }
