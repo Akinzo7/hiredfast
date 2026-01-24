@@ -36,25 +36,34 @@ export function useInterview() {
 
   // Load resume data and job description from localStorage
   useEffect(() => {
-    const savedResumeData = localStorage.getItem("hiredfast_resume_data")
-    const savedJobDescription = localStorage.getItem("hiredfast_job_description")
-    
-    if (savedResumeData) {
-      try {
+    if (typeof window === 'undefined') return;
+  
+    try {
+      const savedResumeData = localStorage.getItem("hiredfast_resume_data")
+      const savedJobDescription = localStorage.getItem("hiredfast_job_description")
+      
+      if (savedResumeData) {
         setResumeData(JSON.parse(savedResumeData))
-      } catch (e) {
-        console.error("Failed to parse resume data", e)
       }
-    }
-    
-    if (savedJobDescription) {
-      setJobDescription(savedJobDescription)
+      
+      if (savedJobDescription) {
+        setJobDescription(savedJobDescription)
+      }
+    } catch (error) {
+      console.error("Failed to load data from localStorage:", error)
     }
   }, [])
 
+  useEffect(() => {
+    // Cleanup function runs when component unmounts
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
   const addMessage = (role: "ai" | "user", content: string) => {
     const newMessage: Message = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: crypto.randomUUID(), // Use browser's crypto API
       role,
       content,
       timestamp: new Date(),

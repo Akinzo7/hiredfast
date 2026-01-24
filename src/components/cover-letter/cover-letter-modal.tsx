@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useDebouncedCallback } from 'use-debounce';
 import { useResumeBuilder } from "@/hooks/use-resume-builder"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -101,29 +102,41 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   // Template modal
   const [showTemplates, setShowTemplates] = useState(false)
   
+  const debouncedSetJobDescription = useDebouncedCallback(
+    (value: string) => setJobDescription(value),
+    300 // 300ms delay
+  );
+  
   const previewRef = useRef<HTMLDivElement>(null)
   
   const charCount = jobDescription.length
   const isGenerateDisabled = charCount < 50 || isGenerating
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    setIsProcessingFile(true)
-    setFileError(null)
-    try {
-      const text = await extractTextFromFile(file)
-      setUploadedFile(file)
-      setUploadedText(text)
-      setResumeSource("upload")
-    } catch (err) {
-      setFileError(err instanceof Error ? err.message : "Failed to process file")
-      setUploadedFile(null)
-      setUploadedText("")
-    } finally {
-      setIsProcessingFile(false)
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Prevent concurrent processing
+    if (isProcessingFile) {
+      return;
     }
-  }
+    
+    setIsProcessingFile(true);
+    setFileError(null);
+    
+    try {
+      const text = await extractTextFromFile(file);
+      setUploadedFile(file);
+      setUploadedText(text);
+      setResumeSource("upload");
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : "Failed to process file");
+      setUploadedFile(null);
+      setUploadedText("");
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
 
   const handleRemoveFile = () => {
     setUploadedFile(null)
@@ -157,7 +170,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       if (resumeData?.personalInfo) {
         setSenderDetails(prev => ({
           ...prev,
-          fullName: resumeData.personalInfo.name || prev.fullName,
+          fullName: resumeData.personalInfo.fullName || prev.fullName,
           email: resumeData.personalInfo.email || prev.email,
           phone: resumeData.personalInfo.phone || prev.phone,
           linkedin: resumeData.personalInfo.linkedin || prev.linkedin
@@ -178,18 +191,20 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   }
   
   const handleDownloadPDF = async () => {
-    if (!previewRef.current) return
+    if (!previewRef.current) return;
     
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2 })
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save('cover-letter.pdf')
+      const canvas = await html2canvas(previewRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('cover-letter.pdf');
     } catch (err) {
-      console.error('PDF generation failed:', err)
+      console.error('PDF generation failed:', err);
+      // Add user-visible error
+      alert('Failed to generate PDF. Please try again or contact support if the issue persists.');
     }
   }
 
@@ -256,8 +271,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     placeholder="Paste the job description here..."
                     rows={12}
                     className="resize-none overflow-y-auto focus-visible:ring-blue-600 bg-white"
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
+                    defaultValue={jobDescription}
+                    onChange={(e) => debouncedSetJobDescription(e.target.value)}
                   />
                 </div>
 
@@ -274,7 +289,14 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     </Label>
 
                     <div>
-                      <input ref={fileInputRef} type="file" accept=".pdf,.docx" onChange={handleFileSelect} className="hidden" />
+                      <input 
+                        ref={fileInputRef} 
+                        type="file" 
+                        accept=".pdf,.docx" 
+                        onChange={handleFileSelect} 
+                        className="hidden" 
+                        aria-label="Upload resume file"
+                      />
                       <Label htmlFor="upload" onClick={handleUploadClick} className={cn(
                         "flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-white p-4 hover:bg-accent cursor-pointer transition-all w-full",
                         resumeSource === "upload" && "border-purple-600 bg-purple-50/50"
@@ -465,6 +487,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                           "group relative flex flex-col items-start text-left p-2 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
                           selectedTemplate === template ? "border-blue-600 bg-blue-50/30 ring-4 ring-blue-600/10" : "border-transparent bg-slate-50 hover:bg-white hover:border-slate-200"
                         )}
+                        aria-label={`Select ${template} template`}
+                        aria-pressed={selectedTemplate === template}
                       >
                         <div className={cn(
                           "w-full aspect-[1/1.3] rounded-xl overflow-hidden mb-4 shadow-sm group-hover:shadow-md transition-shadow",

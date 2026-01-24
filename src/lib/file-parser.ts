@@ -1,13 +1,13 @@
-import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
-
-// Configure PDF.js worker - use local worker from public directory
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-}
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
+    const pdfjsLib = await import('pdfjs-dist');
+    
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     

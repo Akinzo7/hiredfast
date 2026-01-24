@@ -13,6 +13,12 @@ interface WorkExperienceStepProps {
 
 export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps) {
   
+  const isValidMonthYear = (value: string): boolean => {
+    if (!value.trim()) return true; // Empty is ok
+    const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
+    return regex.test(value);
+  };
+  
   const addExperience = () => {
     updateData([
       ...data, 
@@ -86,8 +92,19 @@ export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps
                   <Label>Start Date</Label>
                   <Input 
                     value={item.startDate}
-                    onChange={(e) => updateExperience(item.id, 'startDate', e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateExperience(item.id, 'startDate', value);
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value;
+                      if (value && !isValidMonthYear(value)) {
+                        // Optionally show error or auto-correct
+                        alert('Please use MM/YYYY format (e.g., 01/2024)');
+                      }
+                    }}
                     placeholder="MM/YYYY"
+                    className={!isValidMonthYear(item.startDate) && item.startDate ? 'border-red-500' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -96,25 +113,33 @@ export function WorkExperienceStep({ data, updateData }: WorkExperienceStepProps
                     <Input 
                         value={item.endDate}
                         onChange={(e) => updateExperience(item.id, 'endDate', e.target.value)}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (value && !isValidMonthYear(value)) {
+                            alert('Please use MM/YYYY format (e.g., 01/2024)');
+                          }
+                        }}
                         placeholder="MM/YYYY"
                         disabled={item.current}
+                        className={!isValidMonthYear(item.endDate) && item.endDate ? 'border-red-500' : ''}
                     />
                     <div className="flex items-center space-x-2">
                         <Checkbox 
                             id={`current-${item.id}`} 
                             checked={item.current}
                             onCheckedChange={(checked) => {
-                                const isChecked = checked === true
+                                // Handle all possible values explicitly
+                                const isChecked = checked === true;
                                 updateData(data.map(i => {
                                     if (i.id === item.id) {
                                         return {
                                             ...i,
                                             current: isChecked,
                                             endDate: isChecked ? "Present" : ""
-                                        }
+                                        };
                                     }
-                                    return i
-                                }))
+                                    return i;
+                                }));
                             }}
                         />
                         <Label htmlFor={`current-${item.id}`} className="text-sm font-normal">Currently work here</Label>

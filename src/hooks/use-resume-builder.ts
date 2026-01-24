@@ -60,23 +60,31 @@ export function useResumeBuilder() {
 
   // Load from LocalStorage
   useEffect(() => {
-    const savedData = localStorage.getItem("hiredfast_resume_data")
-    if (savedData) {
-      try {
-        setResumeData(JSON.parse(savedData))
-      } catch (e) {
-        console.error("Failed to parse resume data", e)
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const savedData = localStorage.getItem("hiredfast_resume_data");
+      if (savedData) {
+        setResumeData(JSON.parse(savedData));
       }
+    } catch (error) {
+      console.error("Failed to load resume data:", error);
+    } finally {
+      setIsLoaded(true);
     }
-    setIsLoaded(true)
-  }, [])
+  }, []);
 
   // Save to LocalStorage
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("hiredfast_resume_data", JSON.stringify(resumeData))
+    if (!isLoaded || typeof window === 'undefined') return;
+    
+    try {
+      localStorage.setItem("hiredfast_resume_data", JSON.stringify(resumeData));
+    } catch (error) {
+      console.error("Failed to save resume data:", error);
+      // Could show toast notification to user
     }
-  }, [resumeData, isLoaded])
+  }, [resumeData, isLoaded]);
 
   const updatePersonalInfo = (data: Partial<ResumeData["personalInfo"]>) => {
     setResumeData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, ...data } }))

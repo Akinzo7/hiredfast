@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const genAI = apiKey && apiKey.trim() ? new GoogleGenerativeAI(apiKey) : null;
 
 export async function POST(req: Request) {
   if (!genAI) {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
 You are a professional career coach and expert cover letter writer with years of experience helping candidates land their dream jobs.
