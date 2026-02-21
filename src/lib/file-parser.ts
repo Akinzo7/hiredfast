@@ -1,5 +1,14 @@
 import mammoth from 'mammoth';
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  const timeout = new Promise<T>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error("PDF processing timed out. Please check your connection and try again."));
+    }, ms);
+  });
+  return Promise.race([promise, timeout]);
+};
+
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     let pdfjsLib;
@@ -13,14 +22,14 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     if (typeof window !== 'undefined') {
       // Use hardcoded version matching package.json to ensure worker compatibility.
       // using unpkg as it mirrors npm versions reliably.
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
     }
 
     const arrayBuffer = await file.arrayBuffer();
     
     let pdf;
     try {
-        pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        pdf = await withTimeout(pdfjsLib.getDocument({ data: arrayBuffer }).promise, 15000);
     } catch (loadError) {
         throw new Error("Detailed PDF Load Error: File corrupted or encrypted.");
     }

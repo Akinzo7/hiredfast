@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { ResumeData } from "./use-resume-builder"
 
 export type Message = {
@@ -43,7 +43,12 @@ export function useInterview() {
       const savedJobDescription = localStorage.getItem("hiredfast_job_description")
       
       if (savedResumeData) {
-        setResumeData(JSON.parse(savedResumeData))
+        try {
+          setResumeData(JSON.parse(savedResumeData))
+        } catch (e) {
+          console.warn("Corrupted resume data in localStorage, clearing.")
+          localStorage.removeItem("hiredfast_resume_data")
+        }
       }
       
       if (savedJobDescription) {
@@ -54,12 +59,19 @@ export function useInterview() {
     }
   }, [])
 
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+    }
+  }, [])
+
   useEffect(() => {
     // Cleanup function runs when component unmounts
     return () => {
       stopSpeaking();
     };
-  }, []);
+  }, [stopSpeaking]);
 
   const addMessage = (role: "ai" | "user", content: string) => {
     const newMessage: Message = {
@@ -91,12 +103,6 @@ export function useInterview() {
     window.speechSynthesis.speak(utterance)
   }
 
-  const stopSpeaking = () => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel()
-      setIsSpeaking(false)
-    }
-  }
 
   const startInterview = async () => {
     setStatus("generating")

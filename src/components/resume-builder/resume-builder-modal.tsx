@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 // Placeholder imports for steps - will implement these next
 import { PersonalInfoStep } from "./steps/personal-info-step"
@@ -26,15 +27,14 @@ export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuild
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0">
-         <ResumeBuilderProvider>
-            <ResumeBuilderContent />
-         </ResumeBuilderProvider>
+        <ResumeBuilderContent />
       </DialogContent>
     </Dialog>
   )
 }
 
 function ResumeBuilderContent() {
+  const router = useRouter()
   const { 
     currentStep, 
     totalSteps, 
@@ -121,7 +121,7 @@ function ResumeBuilderContent() {
              )}
              <Button onClick={() => {
                if (currentStep === totalSteps) {
-                 window.location.href = "/resume/editor"
+                 router.push("/resume/editor")
                } else {
                  nextStep()
                }

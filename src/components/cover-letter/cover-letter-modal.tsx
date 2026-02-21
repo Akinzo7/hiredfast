@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { useDebouncedCallback } from 'use-debounce';
 import { useResumeBuilder } from "@/hooks/use-resume-builder"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -60,7 +60,6 @@ interface CoverLetterModalProps {
 export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const { resumeData } = useResumeBuilder()
   const [open, setOpen] = useState(false)
-  const [jobDescription, setJobDescription] = useState("")
   const [jobDescriptionInput, setJobDescriptionInput] = useState("")
   const [resumeSource, setResumeSource] = useState("current")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -103,17 +102,6 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   // Template modal
   const [showTemplates, setShowTemplates] = useState(false)
   
-  const debouncedSetJobDescription = useDebouncedCallback(
-    (value: string) => setJobDescription(value),
-    300 // 300ms delay
-  );
-
-  const handleJobDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setJobDescriptionInput(value);
-    debouncedSetJobDescription(value);
-  }
-  
   const previewRef = useRef<HTMLDivElement>(null)
   
   const charCount = jobDescriptionInput.length
@@ -121,11 +109,6 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    
-    // Always clear input value to allow re-uploading same file if failed
-    if (event.target) {
-        event.target.value = ""; 
-    }
 
     if (!file) return;
     
@@ -174,6 +157,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       setResumeSource("current");
     } finally {
       setIsProcessingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -200,7 +184,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       const response = await fetch("/api/generate-cover-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription, resumeData: resumeContent, source: resumeSource }),
+        body: JSON.stringify({ jobDescription: jobDescriptionInput, resumeData: resumeContent, source: resumeSource }),
       })
 
       if (!response.ok) throw new Error("Failed to generate cover letter")
@@ -241,7 +225,21 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
       pdf.save('cover-letter.pdf');
     } catch (err) {
       console.error('PDF generation failed:', err);
@@ -285,6 +283,9 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
         "p-0 gap-0 h-[90vh] flex flex-col overflow-hidden",
         isLetterGenerated ? "sm:max-w-[95vw]" : "sm:max-w-[800px]"
       )} style={{ maxWidth: isLetterGenerated ? '95vw' : undefined }}>
+        <VisuallyHidden>
+          <DialogTitle>Cover Letter Generator</DialogTitle>
+        </VisuallyHidden>
         
         {!isLetterGenerated ? (
           // INPUT FORM VIEW
@@ -314,7 +315,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     rows={12}
                     className="resize-none overflow-y-auto focus-visible:ring-blue-600 bg-white"
                     value={jobDescriptionInput}
-                    onChange={handleJobDescriptionChange}
+                    onChange={(e) => setJobDescriptionInput(e.target.value)}
                   />
                 </div>
 

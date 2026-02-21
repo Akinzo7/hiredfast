@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useResumeBuilder, ResumeData } from "@/hooks/use-resume-builder"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, ZoomIn, ZoomOut, Type, Palette, Maximize, RotateCcw, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
 
 import { TemplateSelectionModal } from "./template-selection-modal"
 
@@ -15,6 +17,36 @@ export function PreviewPanel() {
   const [font, setFont] = useState("inter")
   const [template, setTemplate] = useState("modern")
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+  const resumeRef = useRef<HTMLDivElement | null>(null)
+
+  const handleDownload = async () => {
+    if (!resumeRef.current) return;
+    try {
+      const canvas = await html2canvas(resumeRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save('resume.pdf');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+    }
+  }
 
   // Mapping template ID to display name for the button
   const getTemplateName = (id: string) => {
@@ -102,7 +134,7 @@ export function PreviewPanel() {
                  </SelectContent>
              </Select>
 
-             <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-9 px-4">
+             <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-9 px-4" onClick={handleDownload}>
                  <Download className="h-4 w-4" /> Download
              </Button>
          </div>
@@ -133,6 +165,7 @@ export function PreviewPanel() {
 
           {/* Resume Page Container */}
           <div 
+             ref={resumeRef}
              className="bg-white shadow-2xl transition-transform origin-top duration-200 ease-out min-h-[297mm]"
              style={{ 
                  width: '210mm',
