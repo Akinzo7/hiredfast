@@ -15,7 +15,9 @@ export async function POST(req: Request) {
   try {
     const { conversationHistory, userAnswer, resumeData, jobDescription, questionNumber } = await req.json();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const resumeContext = typeof resumeData === 'string' ? resumeData : JSON.stringify(resumeData);
 
     const totalQuestions = 5;
     const isComplete = questionNumber > totalQuestions;
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
 You are an experienced technical interviewer conducting a mock interview.
 
 Resume Context:
-${JSON.stringify(resumeData)}
+${resumeContext}
 
 Job Description:
 ${jobDescription}
@@ -103,7 +105,7 @@ Latest Answer from Candidate:
 ${userAnswer}
 
 Resume Context:
-${JSON.stringify(resumeData)}
+${resumeContext}
 
 Job Description:
 ${jobDescription}

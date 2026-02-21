@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ResumeBuilderModal } from "@/components/resume-builder/resume-builder-modal"
 import { CoverLetterModal } from "@/components/cover-letter/cover-letter-modal"
+import { InterviewSetupModal } from "@/components/interview/interview-setup-modal"
 import { ResumeBuilderProvider } from "@/hooks/use-resume-builder"
 
 export default function Home() {
@@ -75,6 +76,15 @@ export default function Home() {
                      Continue <ArrowRight className="h-4 w-4" />
                    </Button>
                  </CoverLetterModal>
+               ) : selectedOption === "simulate" ? (
+                 <InterviewSetupModal>
+                   <Button 
+                      className={cn("gap-2 h-12 px-6 rounded-xl transition-colors", selectedColorClass)}
+                      variant={selectedOption ? "default" : "outline"}
+                   >
+                     Continue <ArrowRight className="h-4 w-4" />
+                   </Button>
+                 </InterviewSetupModal>
                ) : (
                  <ResumeBuilderModal>
                    <Button 

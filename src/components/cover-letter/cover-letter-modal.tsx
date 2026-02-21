@@ -187,7 +187,10 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
         body: JSON.stringify({ jobDescription: jobDescriptionInput, resumeData: resumeContent, source: resumeSource }),
       })
 
-      if (!response.ok) throw new Error("Failed to generate cover letter")
+      if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.error || "Failed to generate cover letter")
+    }
 
       const data = await response.json()
       setLetterContent(data.letter)

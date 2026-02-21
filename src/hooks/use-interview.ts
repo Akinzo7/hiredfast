@@ -30,6 +30,7 @@ export function useInterview() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData | null>(null)
   const [jobDescription, setJobDescription] = useState<string>("")
+  const [resumeText, setResumeText] = useState<string>("")
   
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
   const totalQuestions = 5
@@ -39,9 +40,14 @@ export function useInterview() {
     if (typeof window === 'undefined') return;
   
     try {
+      // Read interview-specific resume text (from setup flow)
+      const interviewResumeText = localStorage.getItem("hiredfast_interview_resume_text")
+      if (interviewResumeText) {
+        setResumeText(interviewResumeText)
+      }
+
+      // Read structured resume data
       const savedResumeData = localStorage.getItem("hiredfast_resume_data")
-      const savedJobDescription = localStorage.getItem("hiredfast_job_description")
-      
       if (savedResumeData) {
         try {
           setResumeData(JSON.parse(savedResumeData))
@@ -50,8 +56,13 @@ export function useInterview() {
           localStorage.removeItem("hiredfast_resume_data")
         }
       }
-      
-      if (savedJobDescription) {
+
+      // Read job description: prefer interview-specific, fall back to cover letter one
+      const interviewJD = localStorage.getItem("hiredfast_interview_job_description")
+      const savedJobDescription = localStorage.getItem("hiredfast_job_description")
+      if (interviewJD) {
+        setJobDescription(interviewJD)
+      } else if (savedJobDescription) {
         setJobDescription(savedJobDescription)
       }
     } catch (error) {
@@ -116,7 +127,7 @@ export function useInterview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationHistory: [],
-          resumeData,
+          resumeData: resumeText || JSON.stringify(resumeData),
           jobDescription,
           questionNumber: 1,
         }),
@@ -155,7 +166,7 @@ export function useInterview() {
             content: m.content,
           })),
           userAnswer: answer,
-          resumeData,
+          resumeData: resumeText || JSON.stringify(resumeData),
           jobDescription,
           questionNumber: nextQuestionNumber,
         }),
@@ -192,6 +203,14 @@ export function useInterview() {
     stopSpeaking()
   }
 
+  const saveResults = useCallback((data: PerformanceData) => {
+    try {
+      localStorage.setItem("hiredfast_interview_results", JSON.stringify(data))
+    } catch (e) {
+      console.error("Failed to save results:", e)
+    }
+  }, [])
+
   return {
     status,
     messages,
@@ -199,10 +218,12 @@ export function useInterview() {
     totalQuestions,
     performanceData,
     isSpeaking,
+    resumeText,
     startInterview,
     submitAnswer,
     resetInterview,
     speak,
     stopSpeaking,
+    saveResults,
   }
 }
