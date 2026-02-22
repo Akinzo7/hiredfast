@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useRef } from "react"
 import { CheckCircle2, Lightbulb, Sparkles, RotateCcw, Home } from "lucide-react"
 import { useInterview, PerformanceData } from "@/hooks/use-interview"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
+import { saveInterview } from "@/lib/firestore"
+
 
 function ScoreCircle({ score }: { score: number }) {
   const radius = 70
@@ -70,6 +74,23 @@ export default function InterviewResultsPage() {
     }
     setLoading(false)
   }, [hookData])
+
+  const { user } = useAuth()
+  const hasSaved = useRef(false)
+
+  useEffect(() => {
+    if (!data || !user || hasSaved.current) return
+    hasSaved.current = true
+    const jobTitle = localStorage.getItem("hiredfast_interview_job_title")
+    const company = localStorage.getItem("hiredfast_interview_company")
+    saveInterview(user.uid, {
+      jobTitle: jobTitle ?? undefined,
+      company: company ?? undefined,
+      score: data.score,
+      results: data,
+    }).catch(console.error)
+  }, [data, user])
+
 
   const handlePracticeAgain = () => {
     resetInterview()
