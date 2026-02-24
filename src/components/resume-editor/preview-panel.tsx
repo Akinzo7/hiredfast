@@ -93,24 +93,24 @@ export function PreviewPanel() {
       />
 
       {/* Toolbar */}
-      <div className="h-14 px-4 border-b bg-white flex items-center justify-between shrink-0 z-20">
+      <div className="h-14 px-4 border-b bg-background flex items-center justify-between shrink-0 z-20">
          <div className="flex items-center gap-3">
              <Button 
                 variant="outline" 
                 onClick={() => setIsTemplateModalOpen(true)}
-                className="w-[180px] justify-between bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all shadow-sm"
+                className="w-[180px] justify-between bg-muted border-border hover:bg-accent hover:border-border transition-all shadow-sm"
              >
                 <span className="font-medium truncate mr-2">{getTemplateName(template)}</span>
                 <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
              </Button>
              
-             <Button variant="ghost" size="icon" className="h-9 w-9 bg-slate-100 rounded-lg text-slate-700">
+             <Button variant="ghost" size="icon" className="h-9 w-9 bg-muted rounded-lg text-foreground">
                 <Palette className="h-4 w-4" />
              </Button>
          </div>
 
          <div className="flex items-center gap-2">
-             <div className="flex items-center bg-slate-100 rounded-lg p-1">
+             <div className="flex items-center bg-muted rounded-lg p-1">
                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setScale(s => Math.max(0.4, s - 0.1))}>
                      <ZoomOut className="h-3.5 w-3.5" />
                  </Button>
@@ -123,7 +123,7 @@ export function PreviewPanel() {
 
          <div className="flex items-center gap-3">
              <Select value={font} onValueChange={setFont}>
-                 <SelectTrigger className="w-[110px] bg-slate-100 border-none h-9">
+                 <SelectTrigger className="w-[110px] bg-muted border-none h-9">
                      <Type className="h-3.5 w-3.5 mr-2 opacity-50" />
                      <SelectValue placeholder="Font" />
                  </SelectTrigger>
@@ -134,22 +134,22 @@ export function PreviewPanel() {
                  </SelectContent>
              </Select>
 
-             <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-9 px-4" onClick={handleDownload}>
+             <Button className="gap-2 h-9 px-4" onClick={handleDownload}>
                  <Download className="h-4 w-4" /> Download
              </Button>
          </div>
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 overflow-auto bg-slate-200/50 relative flex items-start justify-center p-8 md:p-12">
+      <div className="flex-1 overflow-auto bg-muted/50 relative flex items-start justify-center p-8 md:p-12">
           
           {/* Resume Score Floating Widget */}
-          <div className="absolute top-6 right-6 z-10 w-64 bg-white rounded-xl shadow-lg border p-4 animate-in fade-in slide-in-from-right-4">
+          <div className="absolute top-6 right-6 z-10 w-64 bg-card rounded-xl shadow-lg border p-4 animate-in fade-in slide-in-from-right-4">
               <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-sm">Resume Score</h3>
-                  <div className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{score}/100</div>
+                  <h3 className="font-bold text-sm text-foreground">Resume Score</h3>
+                  <div className="text-xs font-bold text-green-600 bg-green-500/15 px-2 py-0.5 rounded-full">{score}/100</div>
               </div>
-              <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className={cn(
                         "absolute top-0 left-0 h-full transition-all duration-500 rounded-full",

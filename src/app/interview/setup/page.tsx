@@ -35,13 +35,13 @@ export default function InterviewSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-6 max-w-lg w-full">
         {/* Interview Type Dropdown */}
         <InterviewTypeDropdown value={selectedType} onChange={setSelectedType} />
 
         {/* Type label */}
-        <div className="flex items-center gap-2 text-slate-400">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
             {TYPE_LABELS[selectedType] || "PORTFOLIO REVIEW"}
           </span>
@@ -50,16 +50,16 @@ export default function InterviewSetupPage() {
 
         {/* Subtitle */}
         {jobTitle && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Interview with the {jobTitle}
           </p>
         )}
 
         {/* Avatar */}
         <div className="relative mt-2">
-          <div className="h-32 w-32 rounded-full ring-4 ring-slate-700/50 ring-offset-4 ring-offset-[#0d1117] overflow-hidden bg-slate-800 flex items-center justify-center">
+          <div className="h-32 w-32 rounded-full ring-4 ring-slate-700/50 ring-offset-4 ring-offset-background overflow-hidden bg-slate-800 flex items-center justify-center">
             {imgError ? (
-              <span className="text-3xl font-bold text-slate-400">EZ</span>
+              <span className="text-3xl font-bold text-muted-foreground">EZ</span>
             ) : (
               <img
                 src={INTERVIEWER_AVATAR}
@@ -73,7 +73,7 @@ export default function InterviewSetupPage() {
 
         {/* Greeting */}
         <div className="text-center mt-4">
-          <h1 className="text-xl md:text-2xl font-bold text-white leading-snug">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground leading-snug">
             Hi! I&apos;m {INTERVIEWER_NAME},
             <br />
             your interviewer today.

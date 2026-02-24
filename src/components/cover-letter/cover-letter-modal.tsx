@@ -283,7 +283,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className={cn(
-        "p-0 gap-0 h-[90vh] flex flex-col overflow-hidden",
+        "p-0 gap-0 h-[90vh] flex flex-col overflow-hidden bg-background border-border",
         isLetterGenerated ? "sm:max-w-[95vw]" : "sm:max-w-[800px]"
       )} style={{ maxWidth: isLetterGenerated ? '95vw' : undefined }}>
         <VisuallyHidden>
@@ -293,12 +293,12 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
         {!isLetterGenerated ? (
           // INPUT FORM VIEW
           <div className="flex flex-col h-full overflow-hidden">
-            <div className="px-6 py-4 border-b shrink-0 bg-white z-10">
+            <div className="px-6 py-4 border-b shrink-0 bg-background z-10">
               <h2 className="text-xl font-semibold">Generate Cover Letter</h2>
               <p className="text-sm text-muted-foreground">Tailor your application using AI analysis.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0 bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0 bg-muted/50">
               <div className="space-y-8 max-w-2xl mx-auto">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -316,7 +316,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     id="jd"
                     placeholder="Paste the job description here..."
                     rows={12}
-                    className="resize-none overflow-y-auto focus-visible:ring-blue-600 bg-white"
+                    className="resize-none overflow-y-auto focus-visible:ring-blue-600 bg-background"
                     value={jobDescriptionInput}
                     onChange={(e) => setJobDescriptionInput(e.target.value)}
                   />
@@ -326,8 +326,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                   <Label className="text-base font-semibold">Choose your Resume</Label>
                   <RadioGroup value={resumeSource} onValueChange={setResumeSource} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Label htmlFor="current" className={cn(
-                      "flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-white p-4 hover:bg-accent cursor-pointer transition-all",
-                      resumeSource === "current" && "border-blue-600 bg-blue-50/50"
+                      "flex flex-col items-center justify-between rounded-xl border-2 border-border bg-card p-4 hover:bg-accent cursor-pointer transition-all",
+                      resumeSource === "current" && "border-blue-600 bg-blue-500/10"
                     )}>
                       <RadioGroupItem value="current" id="current" className="sr-only" />
                       <Database className="mb-3 h-6 w-6 text-blue-600" />
@@ -344,8 +344,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                         aria-label="Upload resume file"
                       />
                       <Label htmlFor="upload" onClick={handleUploadClick} className={cn(
-                        "flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-white p-4 hover:bg-accent cursor-pointer transition-all w-full",
-                        resumeSource === "upload" && "border-purple-600 bg-purple-50/50"
+                        "flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-card p-4 hover:bg-accent cursor-pointer transition-all w-full",
+                        resumeSource === "upload" && "border-purple-600 bg-purple-500/10"
                       )}>
                         <RadioGroupItem value="upload" id="upload" className="sr-only" />
                         {isProcessingFile ? <Loader2 className="mb-3 h-6 w-6 text-purple-600 animate-spin" /> : <FileUp className="mb-3 h-6 w-6 text-purple-600" />}
@@ -353,7 +353,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                       </Label>
                     </div>
 
-                    <Label htmlFor="saved" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-white p-4 opacity-50 cursor-not-allowed">
+                    <Label htmlFor="saved" className="flex flex-col items-center justify-between rounded-xl border-2 border-border bg-card opacity-50 cursor-not-allowed p-4">
                       <RadioGroupItem value="saved" id="saved" className="sr-only" disabled />
                       <FileText className="mb-3 h-6 w-6 text-orange-600" />
                       <span className="text-sm font-medium">Select Saved CV</span>
@@ -362,22 +362,22 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                   </RadioGroup>
 
                   {uploadedFile && (
-                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700 truncate">File Uploaded: {uploadedFile.name}</span>
+                        <span className={cn("text-sm font-medium truncate", "text-green-600 dark:text-green-400")}>File Uploaded: {uploadedFile.name}</span>
                       </div>
                       <Button variant="ghost" size="sm" onClick={handleRemoveFile} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0">
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   )}
-                  {fileError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg"><span className="text-sm text-red-700">{fileError}</span></div>}
+                  {fileError && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"><span className="text-sm text-red-600 dark:text-red-400">{fileError}</span></div>}
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t bg-white flex justify-between items-center shrink-0 z-10">
+            <div className="p-6 border-t bg-background flex justify-between items-center shrink-0 z-10">
               <div className="max-w-[60%]">
                 {isGenerating && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-blue-600" />AI is analyzing requirements...</div>}
                 {error && <span className="text-sm text-red-500 line-clamp-1">{error}</span>}
@@ -392,14 +392,14 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
           // EDITOR VIEW
           <div className="flex flex-col h-full overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b shrink-0 flex items-center justify-between bg-slate-50 z-10">
+            <div className="px-4 py-3 border-b shrink-0 flex items-center justify-between bg-muted/50 z-10">
               <div className="flex items-center gap-4">
                 <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="gap-2">
                   <Palette className="h-4 w-4" />
                   {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)} Template
                 </Button>
                 <Select value={selectedFont} onValueChange={(v) => setSelectedFont(v as FontType)}>
-                  <SelectTrigger className="w-40 bg-white">
+                  <SelectTrigger className="w-40 bg-background">
                     <SelectValue placeholder="Font" />
                   </SelectTrigger>
                   <SelectContent>
@@ -418,13 +418,13 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
             </div>
 
             {/* Split Panel */}
-            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden bg-slate-200/50">
+            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden bg-muted/50">
               {/* Left Panel - Editor */}
-              <div className="w-full md:w-[400px] border-r overflow-y-auto bg-white shrink-0">
+              <div className="w-full md:w-[400px] border-r overflow-y-auto bg-background shrink-0">
                 <div className="p-4 space-y-4">
                   {/* Contact Details */}
                   <Collapsible open={contactOpen} onOpenChange={setContactOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg border hover:bg-muted transition-colors">
                       <span className="font-semibold text-sm">SENDER DETAILS</span>
                       <ChevronDown className={cn("h-4 w-4 transition-transform text-muted-foreground", contactOpen && "rotate-180")} />
                     </CollapsibleTrigger>
@@ -440,7 +440,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
 
                   {/* Recipient Details */}
                   <Collapsible open={recipientOpen} onOpenChange={setRecipientOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg border hover:bg-muted transition-colors">
                       <span className="font-semibold text-sm">RECIPIENT DETAILS</span>
                       <ChevronDown className={cn("h-4 w-4 transition-transform text-muted-foreground", recipientOpen && "rotate-180")} />
                     </CollapsibleTrigger>
@@ -456,7 +456,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
 
                   {/* Cover Letter Content */}
                   <Collapsible open={contentOpen} onOpenChange={setContentOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg border border-border hover:bg-accent transition-colors">
                       <span className="font-semibold text-sm">LETTER CONTENT</span>
                       <ChevronDown className={cn("h-4 w-4 transition-transform text-muted-foreground", contentOpen && "rotate-180")} />
                     </CollapsibleTrigger>
@@ -473,11 +473,11 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
               </div>
 
               {/* Right Panel - Preview */}
-              <div className="flex-1 overflow-auto bg-slate-200 p-8 flex justify-center items-start">
+              <div className="flex-1 overflow-auto bg-muted p-8 flex justify-center items-start">
                 <div 
                   id="pdf-preview"
                   ref={previewRef}
-                  className="bg-white shadow-2xl w-full max-w-[650px] transform origin-top transition-all"
+                  className="bg-background shadow-2xl w-full max-w-[650px] transform origin-top transition-all"
                   style={{ 
                     aspectRatio: '1/1.414', 
                     fontFamily: FONTS[selectedFont],
@@ -506,7 +506,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                   </div>
                   
                   {/* Body */}
-                  <div className={cn("px-10 py-6 text-sm leading-relaxed whitespace-pre-wrap text-slate-800", templateStyles.bodyPadding)}>
+                  <div className={cn("px-10 py-6 text-sm leading-relaxed whitespace-pre-wrap text-foreground", templateStyles.bodyPadding)}>
                     {letterContent}
                   </div>
                 </div>
@@ -516,10 +516,10 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
             {/* Template Selection Modal */}
             {showTemplates && (
               <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowTemplates(false)}>
-                <div className="bg-white rounded-2xl p-8 max-w-4xl w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="bg-popover rounded-2xl p-8 max-w-4xl w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-between items-center mb-8">
                     <div>
-                      <h3 className="text-2xl font-bold tracking-tight">Select a Professional Template</h3>
+                      <h3 className="text-2xl font-bold tracking-tight text-foreground">Select a Professional Template</h3>
                       <p className="text-muted-foreground text-sm">Choose a style that matches your career goal.</p>
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowTemplates(false)}><X className="h-5 w-5" /></Button>
@@ -531,7 +531,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                         onClick={() => { setSelectedTemplate(template); setShowTemplates(false) }}
                         className={cn(
                           "group relative flex flex-col items-start text-left p-2 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
-                          selectedTemplate === template ? "border-blue-600 bg-blue-50/30 ring-4 ring-blue-600/10" : "border-transparent bg-slate-50 hover:bg-white hover:border-slate-200"
+                          selectedTemplate === template ? "border-blue-600 bg-blue-500/10 ring-4 ring-blue-600/10" : "border-transparent bg-muted/50 hover:bg-card hover:border-border"
                         )}
                         aria-label={`Select ${template} template`}
                         aria-pressed={selectedTemplate === template}

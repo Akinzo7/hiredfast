@@ -59,7 +59,7 @@ export default function SettingsPage() {
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                     provider.connected
                       ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                      : "bg-muted text-muted-foreground"
                   }`}>
                   {provider.connected ? "Connected" : "Not connected"}
                 </span>
@@ -79,7 +79,7 @@ export default function SettingsPage() {
               </p>
             </div>
             <button disabled
-              className="h-9 px-4 rounded-lg bg-slate-100 text-slate-400 text-sm font-medium cursor-not-allowed dark:bg-slate-800">
+              className="h-9 px-4 rounded-lg bg-muted text-muted-foreground/50 text-sm font-medium cursor-not-allowed">
               Upgrade (Coming Soon)
             </button>
           </div>

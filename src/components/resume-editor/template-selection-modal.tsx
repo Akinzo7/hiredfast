@@ -78,14 +78,14 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[95vw] !w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl">
-        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-white z-10">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl bg-background border-border">
+        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-background z-10">
           <DialogTitle className="text-xl font-semibold">Select a Template</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50">
+        <div className="flex-1 flex flex-col min-h-0 bg-muted/20">
           {/* Category Pills */}
-          <div className="px-6 py-4 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 bg-white border-b">
+          <div className="px-6 py-4 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 bg-background border-b">
             {TEMPLATE_CATEGORIES.map(category => (
               <Button
                 key={category}
@@ -95,8 +95,8 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
                 className={cn(
                   "rounded-full px-4 h-8 text-sm font-medium transition-all",
                   activeCategory === category 
-                    ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white" 
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 {category}
@@ -109,7 +109,7 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
              <div className="space-y-8">
                 {activeCategory !== "All" ? (
                    <div>
-                      <h2 className="text-2xl font-bold mb-6 text-slate-800">{activeCategory}</h2>
+                      <h2 className="text-2xl font-bold mb-6 text-foreground">{activeCategory}</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {filteredTemplates.map(template => (
                            <TemplateCard 
@@ -156,10 +156,10 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
     <div 
       onClick={onSelect}
       className={cn(
-        "group relative cursor-pointer rounded-xl bg-white transition-all duration-200 overflow-hidden border-2 flex flex-col h-full",
+        "group relative cursor-pointer rounded-xl bg-card transition-all duration-200 overflow-hidden border-2 flex flex-col h-full",
         isSelected 
-          ? "border-blue-600 ring-4 ring-blue-600/10 shadow-lg scale-[1.02]" 
-          : "border-transparent shadow-sm hover:shadow-xl hover:border-blue-200/50 hover:-translate-y-1"
+          ? "border-primary ring-4 ring-primary/10 shadow-lg scale-[1.02]" 
+          : "border-border shadow-sm hover:shadow-xl hover:border-primary/50 hover:-translate-y-1"
       )}
     >
        {/* Preview Image Placeholder */}
@@ -168,7 +168,7 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
           template.thumbnailBg
        )}>
           {/* Mock Document visuals */}
-          <div className="absolute top-4 left-4 right-4 h-full bg-white shadow-sm rounded-t-sm p-3 opacity-90 transform origin-top hover:scale-[1.02] transition-transform duration-500">
+          <div className="absolute top-4 left-4 right-4 h-full bg-background shadow-sm rounded-t-sm p-3 opacity-90 transform origin-top hover:scale-[1.02] transition-transform duration-500">
               <div className="h-4 w-2/3 bg-slate-800 rounded mb-2 opacity-20" />
               <div className="h-2 w-1/3 bg-blue-500 rounded mb-4 opacity-20" />
               <div className="space-y-1">
@@ -182,7 +182,7 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
           {isSelected && (
             <div className="absolute inset-0 bg-blue-900/10 flex items-center justify-center backdrop-blur-[1px]">
                <div className="bg-white rounded-full p-2 shadow-xl animate-in zoom-in spin-in-90 duration-300">
-                 <CheckCircle2 className="h-8 w-8 text-blue-600 fill-blue-50" />
+                 <CheckCircle2 className="h-8 w-8 text-primary fill-primary-foreground/20" />
                </div>
             </div>
           )}
@@ -191,7 +191,7 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
        {/* Content */}
        <div className="p-4 flex flex-col flex-1 border-t">
           <div className="flex justify-between items-start mb-2">
-            <h3 className={cn("font-bold text-lg", isSelected ? "text-blue-700" : "text-slate-900")}>{template.name}</h3>
+            <h3 className={cn("font-bold text-lg", isSelected ? "text-primary" : "text-foreground")}>{template.name}</h3>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
        </div>

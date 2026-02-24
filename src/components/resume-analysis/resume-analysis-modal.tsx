@@ -74,7 +74,8 @@ function ScoreCircle({ score }: { score: number }) {
           cx="60"
           cy="60"
           r={radius}
-          stroke="#f1f5f9"
+          stroke="currentColor"
+          strokeOpacity="0.1"
           strokeWidth="8"
           fill="transparent"
         />
@@ -92,7 +93,7 @@ function ScoreCircle({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute flex items-center justify-center">
-        <span className="text-3xl font-bold text-slate-800">{score}</span>
+        <span className="text-3xl font-bold text-foreground">{score}</span>
       </div>
     </div>
   )
@@ -268,7 +269,7 @@ export function ResumeAnalysisModal({
     <div className="flex flex-col">
       {/* Title */}
       <div className="px-6 pt-6 pb-4 text-center">
-        <h2 className="text-xl font-semibold text-slate-900">
+        <h2 className="text-xl font-semibold text-foreground">
           Which resume would you like to use?
         </h2>
       </div>
@@ -276,13 +277,13 @@ export function ResumeAnalysisModal({
       {/* Search + Upload */}
       <div className="px-6 pb-3 flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
           <input
             type="text"
             placeholder="Search resumes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400 transition-colors"
+            className="w-full h-11 pl-9 pr-4 rounded-xl border border-border bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400 transition-colors"
           />
         </div>
 
@@ -321,11 +322,11 @@ export function ResumeAnalysisModal({
       <div className="px-6 pb-2 max-h-[380px] overflow-y-auto space-y-2">
         {filteredResumes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14">
-            <FileText className="h-10 w-10 text-slate-200 mb-3" />
-            <p className="text-sm font-medium text-slate-500">
+            <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">
               No resumes found
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground/70 mt-1">
               Upload a PDF or DOCX to get started
             </p>
           </div>
@@ -337,16 +338,16 @@ export function ResumeAnalysisModal({
               className={cn(
                 "flex items-start justify-between p-4 rounded-xl border cursor-pointer transition-all",
                 selectedResumeId === resume.id
-                  ? "border-blue-400 bg-blue-50/40"
-                  : "border-slate-200 bg-white hover:bg-slate-50"
+                  ? "border-blue-400 bg-blue-500/10"
+                  : "border-border bg-card hover:bg-accent"
               )}
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {resume.name}
                 </p>
                 {resume.subtitle && (
-                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {resume.subtitle}
                   </p>
                 )}
@@ -355,12 +356,12 @@ export function ResumeAnalysisModal({
                 <span
                   className={cn(
                     "text-[11px] font-semibold px-2.5 py-0.5 rounded-full",
-                    "bg-green-100 text-green-700"
+                    "bg-green-500/15 text-green-600 dark:text-green-400"
                   )}
                 >
                   {resume.badge}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   {formatTimeAgo(resume.createdAt)}
                 </span>
               </div>
@@ -370,11 +371,11 @@ export function ResumeAnalysisModal({
       </div>
 
       {/* Bottom bar */}
-      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between mt-2">
+      <div className="px-6 py-4 border-t border-border flex items-center justify-between mt-2">
         <Button
           variant="ghost"
           onClick={() => setOpen(false)}
-          className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5"
+          className="text-muted-foreground hover:text-foreground hover:bg-accent gap-1.5"
         >
           ← Back
         </Button>
@@ -400,11 +401,11 @@ export function ResumeAnalysisModal({
 
   const LoadingView = () => (
     <div className="flex flex-col items-center justify-center min-h-[320px] py-16 px-6">
-      <div className="h-20 w-20 rounded-full border-[5px] border-slate-100 border-t-purple-600 animate-spin" />
-      <p className="text-2xl font-semibold text-slate-800 mt-8">
+      <div className="h-20 w-20 rounded-full border-[5px] border-muted border-t-purple-600 animate-spin" />
+      <p className="text-2xl font-semibold text-foreground mt-8">
         Analyzing Your Resume...
       </p>
-      <p className="text-sm text-slate-500 mt-2">This may take a moment.</p>
+      <p className="text-sm text-muted-foreground mt-2">This may take a moment.</p>
     </div>
   )
 
@@ -433,14 +434,14 @@ export function ResumeAnalysisModal({
               setAnalysisResult(null)
               setExpandedCategories(new Set())
             }}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-4"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             ← Back
           </button>
-          <h2 className="text-xl font-bold text-slate-900 text-center">
+          <h2 className="text-xl font-bold text-foreground text-center">
             Resume Analysis Complete
           </h2>
-          <p className="text-sm text-slate-500 text-center mt-1.5">
+          <p className="text-sm text-muted-foreground text-center mt-1.5">
             Here&apos;s how your resume performs and areas for improvement
           </p>
         </div>
@@ -467,10 +468,10 @@ export function ResumeAnalysisModal({
 
         {/* Score Breakdown */}
         <div className="px-6 pb-6">
-          <p className="text-sm font-semibold text-slate-700 text-center mb-3">
+          <p className="text-sm font-semibold text-foreground text-center mb-3">
             Score Breakdown
           </p>
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="border border-border rounded-xl overflow-hidden">
             {result.categories.map((category, index) => {
               const ratio = category.score / category.maxScore
               const barColor =
@@ -487,16 +488,16 @@ export function ResumeAnalysisModal({
                   {/* Row header */}
                   <div
                     onClick={() => toggleCategory(category.name)}
-                    className="flex items-center justify-between px-4 py-3.5 bg-white hover:bg-slate-50 cursor-pointer transition-colors select-none"
+                    className="flex items-center justify-between px-4 py-3.5 bg-card hover:bg-accent cursor-pointer transition-colors select-none"
                   >
                     {/* Category name */}
-                    <span className="text-sm font-medium text-slate-700 flex-1 min-w-0 mr-4">
+                    <span className="text-sm font-medium text-foreground flex-1 min-w-0 mr-4">
                       {category.name}
                     </span>
 
                     {/* Progress bar + score */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-28 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all duration-700",
@@ -507,7 +508,7 @@ export function ResumeAnalysisModal({
                           }}
                         />
                       </div>
-                      <span className="text-sm text-slate-500 font-medium whitespace-nowrap w-12 text-right">
+                      <span className="text-sm text-muted-foreground font-medium whitespace-nowrap w-12 text-right">
                         {category.score}/{category.maxScore}
                       </span>
                     </div>
@@ -515,7 +516,7 @@ export function ResumeAnalysisModal({
                     {/* Chevron */}
                     <ChevronDown
                       className={cn(
-                        "h-4 w-4 text-slate-400 ml-2 shrink-0 transition-transform duration-200",
+                        "h-4 w-4 text-muted-foreground ml-2 shrink-0 transition-transform duration-200",
                         isExpanded && "rotate-180"
                       )}
                     />
@@ -523,7 +524,7 @@ export function ResumeAnalysisModal({
 
                   {/* Expanded feedback */}
                   {isExpanded && (
-                    <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 space-y-2">
+                    <div className="px-4 py-3 bg-muted/50 border-t border-border space-y-2">
                       {category.feedback.map((point, i) => {
                         const isPositive = point.startsWith("✓")
                         return (
@@ -538,7 +539,7 @@ export function ResumeAnalysisModal({
                             >
                               {isPositive ? "✓" : "⚠"}
                             </span>
-                            <span className="text-sm text-slate-600 leading-relaxed">
+                            <span className="text-sm text-foreground/80 leading-relaxed">
                               {point.replace(/^[✓⚠]\s*/, "")}
                             </span>
                           </div>
@@ -548,7 +549,7 @@ export function ResumeAnalysisModal({
                   )}
 
                   {/* Divider between rows (not after last) */}
-                  {!isLast && <div className="h-px bg-slate-100" />}
+                  {!isLast && <div className="h-px bg-border" />}
                 </div>
               )
             })}
@@ -565,7 +566,7 @@ export function ResumeAnalysisModal({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
         className={cn(
-          "p-0 gap-0 bg-white border-slate-200 overflow-hidden",
+          "p-0 gap-0 bg-background border-border overflow-hidden",
           view === "results"
             ? "sm:max-w-[620px] max-h-[90vh] overflow-y-auto"
             : "sm:max-w-[620px]"

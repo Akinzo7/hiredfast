@@ -46,24 +46,24 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
 
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 mb-8">
-        <Box className="h-7 w-7 text-slate-900" />
-        <span className="text-2xl font-bold text-slate-900">
+        <Box className="h-7 w-7 text-foreground" />
+        <span className="text-2xl font-bold text-foreground">
           HiredFast
         </span>
       </Link>
 
       {/* Card */}
-      <div className="w-full max-w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+      <div className="w-full max-w-[420px] bg-card rounded-2xl border border-border shadow-sm p-8">
 
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-card-foreground">
             Welcome back
           </h1>
-          <p className="text-sm text-slate-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Sign in to save your resumes and track your progress
           </p>
         </div>
@@ -79,7 +79,7 @@ function LoginContent() {
           <button
             onClick={handleGoogleSignIn}
             disabled={loadingProvider !== null}
-            className="w-full flex items-center justify-center gap-3 h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-sm font-medium text-slate-700 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 h-11 px-4 rounded-xl border border-border bg-card hover:bg-accent transition-colors text-sm font-medium text-card-foreground shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loadingProvider === "google" ? (
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
@@ -123,7 +123,7 @@ function LoginContent() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
+        <p className="text-center text-xs text-muted-foreground mt-6">
           By continuing, you agree to our{" "}
           <span className="underline cursor-pointer">
             Terms of Service
@@ -137,7 +137,7 @@ function LoginContent() {
 
       <Link
         href="/"
-        className="mt-6 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+        className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         ← Back to Home
       </Link>

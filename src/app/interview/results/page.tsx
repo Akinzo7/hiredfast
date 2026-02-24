@@ -24,7 +24,8 @@ function ScoreCircle({ score }: { score: number }) {
           cx="80"
           cy="80"
           r={radius}
-          stroke="#1e293b"
+          stroke="currentColor"
+          strokeOpacity="0.15"
           strokeWidth="8"
           fill="transparent"
         />
@@ -42,8 +43,8 @@ function ScoreCircle({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-4xl font-bold text-white">{score}</span>
-        <span className="text-sm text-slate-400">/100</span>
+        <span className="text-4xl font-bold text-foreground">{score}</span>
+        <span className="text-sm text-muted-foreground">/100</span>
       </div>
     </div>
   )
@@ -104,7 +105,7 @@ export default function InterviewResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
       </div>
     )
@@ -112,8 +113,8 @@ export default function InterviewResultsPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4 p-6">
-        <p className="text-slate-400 text-sm">No interview results found.</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
+        <p className="text-muted-foreground text-sm">No interview results found.</p>
         <Button
           onClick={() => router.push("/")}
           className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -126,21 +127,21 @@ export default function InterviewResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-start justify-center py-10 px-4 overflow-y-auto">
+    <div className="min-h-screen bg-background flex items-start justify-center py-10 px-4 overflow-y-auto">
       <div className="w-full max-w-[640px] flex flex-col items-center gap-8">
         {/* Header */}
         <div className="flex flex-col items-center gap-2">
           <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
             <CheckCircle2 className="h-8 w-8 text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white mt-2">Interview Complete!</h1>
-          <p className="text-slate-400 text-sm">Here&apos;s how you did</p>
+          <h1 className="text-2xl font-bold text-foreground mt-2">Interview Complete!</h1>
+          <p className="text-muted-foreground text-sm">Here&apos;s how you did</p>
         </div>
 
         {/* Score */}
         <div className="flex flex-col items-center gap-2">
           <ScoreCircle score={data.score} />
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-2">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-2">
             Overall Score
           </p>
         </div>
@@ -149,7 +150,7 @@ export default function InterviewResultsPage() {
         <div className="w-full">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="h-5 w-5 text-green-400" />
-            <h2 className="text-base font-semibold text-white">Your Strengths</h2>
+            <h2 className="text-base font-semibold text-foreground">Your Strengths</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {data.strengths.map((s, i) => (
@@ -169,27 +170,27 @@ export default function InterviewResultsPage() {
           <div className="w-full">
             <div className="flex items-center gap-2 mb-4">
               <Lightbulb className="h-5 w-5 text-amber-400" />
-              <h2 className="text-base font-semibold text-white">Room for Improvement</h2>
+              <h2 className="text-base font-semibold text-foreground">Room for Improvement</h2>
             </div>
             <div className="space-y-3">
-              <div className="rounded-xl bg-slate-800/80 border border-slate-700/50 p-4">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <div className="rounded-xl bg-muted border border-border p-4">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                   Original Question
                 </p>
-                <p className="text-sm text-slate-300 leading-relaxed">{data.betterAnswer.originalQuestion}</p>
+                <p className="text-sm text-foreground leading-relaxed">{data.betterAnswer.originalQuestion}</p>
               </div>
               <div className="rounded-xl bg-slate-800/80 border border-slate-700/50 p-4">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Your Answer
                 </p>
-                <p className="text-sm text-slate-300 leading-relaxed">{data.betterAnswer.userAnswer}</p>
+                <p className="text-sm text-foreground leading-relaxed">{data.betterAnswer.userAnswer}</p>
               </div>
               <div className="rounded-xl bg-green-500/5 border border-green-500/20 p-4">
                 <p className="text-[10px] font-bold text-green-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" />
                   Improved Answer
                 </p>
-                <p className="text-sm text-green-200 leading-relaxed">{data.betterAnswer.improvedAnswer}</p>
+                <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">{data.betterAnswer.improvedAnswer}</p>
               </div>
             </div>
           </div>
@@ -200,7 +201,7 @@ export default function InterviewResultsPage() {
           <Button
             variant="outline"
             onClick={handlePracticeAgain}
-            className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white gap-2"
+            className="flex-1 gap-2"
           >
             <RotateCcw className="h-4 w-4" />
             Practice Again

@@ -230,7 +230,7 @@ export default function InterviewSessionPage() {
   const progressValue = ((currentQuestionNumber - 1) / totalQuestions) * 100
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Error Banner */}
       {errorBanner && (
         <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-sm text-red-400">
@@ -242,7 +242,7 @@ export default function InterviewSessionPage() {
       )}
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border">
         <button
           onClick={() => setShowEndConfirm(true)}
           className="h-10 w-10 rounded-xl bg-purple-600/20 flex items-center justify-center text-purple-400 hover:bg-purple-600/30 transition-colors"
@@ -251,15 +251,15 @@ export default function InterviewSessionPage() {
         </button>
 
         <div className="text-center flex-1">
-          <h1 className="text-sm font-bold text-white">{jobTitle || "Interview"}</h1>
-          {companyName && <p className="text-xs text-slate-500">{companyName}</p>}
+          <h1 className="text-sm font-bold text-foreground">{jobTitle || "Interview"}</h1>
+          {companyName && <p className="text-xs text-muted-foreground">{companyName}</p>}
           <div className="flex items-center justify-center gap-3 mt-1.5">
-            <span className="text-[10px] text-slate-400 font-medium">
+            <span className="text-[10px] text-muted-foreground font-medium">
               Part {Math.min(currentQuestionNumber, totalQuestions)} of {totalQuestions}
             </span>
             <Progress
               value={progressValue}
-              className="w-24 h-1.5 bg-slate-800 [&>[data-slot=progress-indicator]]:bg-blue-500"
+              className="w-24 h-1.5 bg-muted [&>[data-slot=progress-indicator]]:bg-blue-500"
             />
           </div>
         </div>
@@ -274,8 +274,8 @@ export default function InterviewSessionPage() {
           <div className={cn(
             "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium",
             status === "generating" || isSpeaking
-              ? "bg-blue-900/60 text-blue-300"
-              : "bg-slate-800 text-slate-400"
+              ? "bg-blue-500/20 text-blue-600 dark:bg-blue-900/60 dark:text-blue-300"
+              : "bg-muted text-muted-foreground"
           )}>
             {(status === "generating" || isSpeaking) ? (
               <>
@@ -292,23 +292,23 @@ export default function InterviewSessionPage() {
         <div className="px-4 grid grid-cols-2 gap-3 shrink-0">
           {/* You card */}
           <div className={cn(
-            "rounded-2xl border bg-slate-800/50 p-4 flex flex-col items-center justify-center min-h-[180px] transition-all",
+            "rounded-2xl border bg-card p-4 flex flex-col items-center justify-center min-h-[180px] transition-all",
             isRecording
               ? "border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
-              : "border-slate-700/30"
+              : "border-border"
           )}>
             <div className={cn(
-              "h-16 w-16 rounded-full overflow-hidden bg-slate-700 mb-3 ring-2 transition-all",
-              isRecording ? "ring-green-500 ring-offset-2 ring-offset-slate-800" : "ring-transparent"
+              "h-16 w-16 rounded-full overflow-hidden bg-muted mb-3 ring-2 transition-all",
+              isRecording ? "ring-green-500 ring-offset-2 ring-offset-background" : "ring-transparent"
             )}>
               <img src={USER_AVATAR} alt="You" className="h-full w-full object-cover" />
             </div>
-            <p className="text-sm font-semibold text-white">You</p>
-            <p className="text-[10px] text-slate-500">Interview Candidate</p>
+            <p className="text-sm font-semibold text-foreground">You</p>
+            <p className="text-[10px] text-muted-foreground">Interview Candidate</p>
           </div>
 
           {/* Emilia card */}
-          <div className="rounded-2xl border border-slate-700/30 bg-slate-800/50 p-4 flex flex-col items-center justify-center min-h-[180px] relative">
+          <div className="rounded-2xl border border-border bg-card p-4 flex flex-col items-center justify-center min-h-[180px] relative">
             {(status === "generating" || isSpeaking) && (
               <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
                 Active
@@ -316,7 +316,7 @@ export default function InterviewSessionPage() {
             )}
             <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-700 mb-3 ring-2 ring-transparent flex items-center justify-center">
               {imgError ? (
-                <span className="text-lg font-bold text-slate-400">EZ</span>
+                <span className="text-lg font-bold text-muted-foreground">EZ</span>
               ) : (
                 <img
                   src={INTERVIEWER_AVATAR}
@@ -331,8 +331,8 @@ export default function InterviewSessionPage() {
                 </div>
               )}
             </div>
-            <p className="text-sm font-semibold text-white">{INTERVIEWER_NAME}</p>
-            <p className="text-[10px] text-slate-500">{jobTitle || "Interviewer"}</p>
+            <p className="text-sm font-semibold text-foreground">{INTERVIEWER_NAME}</p>
+            <p className="text-[10px] text-muted-foreground">{jobTitle || "Interviewer"}</p>
 
             {/* Card action buttons */}
             <div className="absolute bottom-3 left-3 right-3 flex justify-between">
@@ -374,8 +374,8 @@ export default function InterviewSessionPage() {
                 className={cn(
                   "px-4 py-3 rounded-2xl text-sm leading-relaxed",
                   msg.role === "ai"
-                    ? "bg-slate-800 text-slate-200 rounded-tl-md"
-                    : "bg-blue-600/20 text-blue-100 rounded-tr-md"
+                    ? "bg-muted text-foreground rounded-tl-md"
+                    : "bg-blue-600/20 text-blue-700 dark:text-blue-100 rounded-tr-md"
                 )}
               >
                 {msg.content}
@@ -386,11 +386,11 @@ export default function InterviewSessionPage() {
           {status === "generating" && (
             <div className="flex flex-col max-w-[85%] mr-auto items-start">
               <span className="text-[10px] text-slate-500 mb-1 px-1">Emilia</span>
-              <div className="px-4 py-3 rounded-2xl bg-slate-800 rounded-tl-md">
+              <div className="px-4 py-3 rounded-2xl bg-muted rounded-tl-md">
                 <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-slate-500 animate-bounce [animation-delay:0ms]" />
-                  <span className="h-2 w-2 rounded-full bg-slate-500 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-2 w-2 rounded-full bg-slate-500 animate-bounce [animation-delay:300ms]" />
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -402,7 +402,7 @@ export default function InterviewSessionPage() {
         {/* Interim transcript bubble */}
         {interimTranscript && (
           <div className="px-4 pb-2">
-            <div className="mx-auto max-w-sm bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 text-center">
+            <div className="mx-auto max-w-sm bg-muted border border-border rounded-xl px-4 py-2 text-sm text-muted-foreground text-center">
               {interimTranscript}...
             </div>
           </div>
@@ -410,14 +410,14 @@ export default function InterviewSessionPage() {
 
         {/* Chat input panel */}
         {showChatInput && (
-          <div className="border-t border-slate-800 bg-slate-900 p-4 animate-in slide-in-from-bottom duration-200">
+          <div className="border-t border-border bg-card p-4 animate-in slide-in-from-bottom duration-200">
             <div className="flex gap-2">
               <Textarea
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 placeholder="Type your answer..."
                 rows={2}
-                className="resize-none bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-blue-500/50 flex-1"
+                className="resize-none bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-500/50 flex-1"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
@@ -440,10 +440,10 @@ export default function InterviewSessionPage() {
       </div>
 
       {/* Bottom toolbar */}
-      <div className="border-t border-slate-800 bg-[#0d1117] px-4 py-3">
+      <div className="border-t border-border bg-background px-4 py-3">
         <div className="flex items-center justify-center gap-3">
           {/* More */}
-          <button className="h-12 w-12 rounded-full bg-slate-700 flex items-center justify-center text-white hover:bg-slate-600 transition-colors">
+          <button className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors">
             <MoreHorizontal className="h-5 w-5" />
           </button>
 
@@ -485,7 +485,7 @@ export default function InterviewSessionPage() {
           <button
             onClick={handleSkip}
             disabled={status !== "active"}
-            className="h-12 w-12 rounded-full bg-slate-700 flex items-center justify-center text-white hover:bg-slate-600 transition-colors disabled:opacity-40"
+            className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-40"
           >
             <SkipForward className="h-5 w-5" />
           </button>
@@ -499,7 +499,7 @@ export default function InterviewSessionPage() {
           </button>
         </div>
 
-        <p className="text-[10px] text-slate-600 text-center mt-2">
+        <p className="text-[10px] text-muted-foreground text-center mt-2">
           {messages.length} message{messages.length !== 1 ? "s" : ""} • Part{" "}
           {Math.min(currentQuestionNumber, totalQuestions)} of {totalQuestions}
         </p>
@@ -507,14 +507,13 @@ export default function InterviewSessionPage() {
 
       {/* End interview confirmation */}
       <Dialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
-        <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-sm">
-          <DialogTitle className="text-white">End interview?</DialogTitle>
-          <p className="text-sm text-slate-400">Your progress will be saved.</p>
+        <DialogContent className="sm:max-w-sm">
+          <DialogTitle className="text-foreground">End interview?</DialogTitle>
+          <p className="text-sm text-muted-foreground">Your progress will be saved.</p>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
               variant="ghost"
               onClick={() => setShowEndConfirm(false)}
-              className="text-slate-400 hover:text-white hover:bg-slate-800"
             >
               Cancel
             </Button>

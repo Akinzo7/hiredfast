@@ -17,7 +17,7 @@ export default function InterviewLayout({
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       {children}
     </div>
   )

@@ -61,19 +61,19 @@ export function EditorSidebar() {
       <AddSectionModal open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen} />
       
       {/* Sidebar Header */}
-      <div className="p-4 border-b flex items-center justify-between bg-white shrink-0">
+      <div className="p-4 border-b flex items-center justify-between bg-background shrink-0">
          <Button 
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            className="gap-2"
             onClick={() => setIsAddSectionOpen(true)}
          >
            <Plus className="h-4 w-4" /> Add Section
          </Button>
-         <div className="flex bg-slate-100 rounded-lg p-1">
+         <div className="flex bg-muted rounded-lg p-1">
             <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={handleExpandAll}
-                className="h-7 text-xs px-2 hover:bg-white hover:shadow-sm"
+                className="h-7 text-xs px-2 hover:bg-background hover:shadow-sm"
             >
                 Expand All
             </Button>
@@ -81,7 +81,7 @@ export function EditorSidebar() {
                 variant="ghost" 
                 size="sm" 
                 onClick={handleCollapseAll}
-                className="h-7 text-xs px-2 hover:bg-white hover:shadow-sm"
+                className="h-7 text-xs px-2 hover:bg-background hover:shadow-sm"
             >
                 Collapse All
             </Button>
@@ -98,71 +98,71 @@ export function EditorSidebar() {
             className="space-y-2"
           >
             {/* Personal Details */}
-            <AccordionItem value="personal" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+            <AccordionItem value="personal" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Personal Details</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <PersonalInfoStep data={resumeData.personalInfo} updateData={updatePersonalInfo} />
               </AccordionContent>
             </AccordionItem>
 
             {/* Professional Summary */}
-            <AccordionItem value="summary" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+            <AccordionItem value="summary" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Professional Summary</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <SummaryStep value={resumeData.summary} onChange={setSummary} />
               </AccordionContent>
             </AccordionItem>
 
             {/* Experience */}
-            <AccordionItem value="experience" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+            <AccordionItem value="experience" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Professional Experience</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <WorkExperienceStep data={resumeData.workExperience} updateData={setWorkExperience} />
               </AccordionContent>
             </AccordionItem>
 
             {/* Education */}
-            <AccordionItem value="education" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+            <AccordionItem value="education" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Education</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <EducationStep data={resumeData.education} updateData={setEducation} />
               </AccordionContent>
             </AccordionItem>
 
              {/* Skills */}
-             <AccordionItem value="skills" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+             <AccordionItem value="skills" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Technical Skills</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <SkillsStep data={resumeData.skills} updateData={setSkills} />
               </AccordionContent>
             </AccordionItem>
 
              {/* Projects */}
-             <AccordionItem value="projects" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+             <AccordionItem value="projects" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Projects</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <ProjectsStep data={resumeData.projects} updateData={setProjects} />
               </AccordionContent>
             </AccordionItem>
 
              {/* Languages & Certs */}
-             <AccordionItem value="languages" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+             <AccordionItem value="languages" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Languages & Certifications</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <LanguagesCertificationsStep 
                     languages={resumeData.languages}
                     certifications={resumeData.certifications}
@@ -173,22 +173,22 @@ export function EditorSidebar() {
             </AccordionItem>
             
             {/* Associations */}
-            <AccordionItem value="associations" className="border rounded-xl bg-slate-50 overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100">
+            <AccordionItem value="associations" className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
                 <span className="font-semibold">Associations</span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 py-4 bg-white border-t">
+              <AccordionContent className="px-4 py-4 bg-background border-t">
                  <AssociationsStep data={resumeData.associations} updateData={setAssociations} />
               </AccordionContent>
             </AccordionItem>
 
             {/* Custom Sections */}
             {resumeData.customSections.map((section) => (
-                <AccordionItem key={section.id} value={section.id} className="border rounded-xl bg-slate-50 overflow-hidden">
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-100 group">
+                <AccordionItem key={section.id} value={section.id} className="border border-border rounded-xl bg-muted/50 overflow-hidden">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted group">
                         <span className="font-semibold">{section.title}</span>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 py-4 bg-white border-t space-y-4">
+                    <AccordionContent className="px-4 py-4 bg-background border-t space-y-4">
                         <div className="flex justify-end">
                             <Button 
                                 variant="ghost" 

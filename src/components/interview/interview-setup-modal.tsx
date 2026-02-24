@@ -143,7 +143,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        className="p-0 gap-0 bg-slate-900 border-slate-700 sm:max-w-[520px]"
+        className="p-0 gap-0 bg-background border-border sm:max-w-[520px]"
         showCloseButton={false}
       >
         <VisuallyHidden>
@@ -157,12 +157,12 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
               <Mic className="h-4 w-4 text-orange-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold text-foreground">
                 {activeStep === 1
                   ? "Which resume would you like to use?"
                   : "What role are you interviewing for?"}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Step {activeStep} of 2
               </p>
             </div>
@@ -173,7 +173,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
             <div className="h-1 flex-1 rounded-full bg-orange-500" />
             <div className={cn(
               "h-1 flex-1 rounded-full transition-colors",
-              activeStep === 2 ? "bg-orange-500" : "bg-slate-700"
+              activeStep === 2 ? "bg-orange-500" : "bg-muted"
             )} />
           </div>
         </div>
@@ -204,14 +204,14 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => {
               if (activeStep === 2) setActiveStep(1)
               else setOpen(false)
             }}
-            className="text-slate-400 hover:text-white hover:bg-slate-800 gap-2"
+            className="text-muted-foreground hover:text-foreground gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
