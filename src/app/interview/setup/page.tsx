@@ -20,12 +20,29 @@ export default function InterviewSetupPage() {
   const [selectedType, setSelectedType] = useState("portfolio")
   const [jobTitle, setJobTitle] = useState("")
   const [imgError, setImgError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    const interviewResumeText = localStorage.getItem("hiredfast_interview_resume_text") ?? ""
+    const interviewJobDescription = localStorage.getItem("hiredfast_interview_job_description") ?? ""
+
+    const hasValidResume = interviewResumeText.trim().length >= 50
+    const hasValidJobDescription = interviewJobDescription.trim().length >= 50
+
+    if (!hasValidResume || !hasValidJobDescription) {
+      router.replace("/")
+      return
+    }
+
     const title = localStorage.getItem("hiredfast_interview_job_title") || ""
     setJobTitle(title)
-  }, [])
+    setIsLoading(false)
+  }, [router])
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0d1117]" />
+  }
 
   const handleStart = () => {
     try {

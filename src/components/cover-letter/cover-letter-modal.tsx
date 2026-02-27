@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useResumeBuilder } from "@/hooks/use-resume-builder"
+import { useAuth } from "@/contexts/auth-context"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Button } from "@/components/ui/button"
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, FileUp, Database, FileText, X, CheckCircle2, ChevronDown, Download, RefreshCw, Palette } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { extractTextFromFile } from "@/lib/file-parser"
+import { saveCoverLetter } from "@/lib/firestore"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 
@@ -59,6 +61,7 @@ interface CoverLetterModalProps {
 
 export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const { resumeData } = useResumeBuilder()
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [jobDescriptionInput, setJobDescriptionInput] = useState("")
   const [resumeSource, setResumeSource] = useState("current")
@@ -207,6 +210,20 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       }
       
       setIsLetterGenerated(true)
+
+      // Save to Firestore if user is logged in - non-fatal
+      if (user) {
+        try {
+          await saveCoverLetter(user.uid, {
+            content: data.letter,
+            jobTitle: undefined,
+            company: undefined,
+          })
+        } catch (saveError) {
+          // Non-fatal: letter still displays even if save fails
+          console.error("Failed to save cover letter:", saveError)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred")
     } finally {
@@ -283,9 +300,9 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className={cn(
-        "p-0 gap-0 h-[90vh] flex flex-col overflow-hidden bg-background border-border",
-        isLetterGenerated ? "sm:max-w-[95vw]" : "sm:max-w-[800px]"
-      )} style={{ maxWidth: isLetterGenerated ? '95vw' : undefined }}>
+        "p-0 gap-0 h-[90vh] flex flex-col overflow-hidden bg-background border-border rounded-xl",
+        isLetterGenerated ? "w-[95vw] sm:max-w-[95vw]" : "w-[95vw] sm:max-w-[800px]"
+      )}>
         <VisuallyHidden>
           <DialogTitle>Cover Letter Generator</DialogTitle>
         </VisuallyHidden>
@@ -392,7 +409,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
           // EDITOR VIEW
           <div className="flex flex-col h-full overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b shrink-0 flex items-center justify-between bg-muted/50 z-10">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex items-center justify-between bg-muted/50 z-10">
               <div className="flex items-center gap-4">
                 <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="gap-2">
                   <Palette className="h-4 w-4" />
@@ -409,7 +426,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={handleRegenerate} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />Regenerate
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="hidden sm:inline">Regenerate</span>
                 </Button>
                 <Button onClick={handleDownloadPDF} className="bg-blue-600 hover:bg-blue-700 gap-2">
                   <Download className="h-4 w-4" />Download
@@ -473,7 +491,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
               </div>
 
               {/* Right Panel - Preview */}
-              <div className="flex-1 overflow-auto bg-muted p-8 flex justify-center items-start">
+              <div className="flex-1 overflow-auto bg-muted p-4 sm:p-8 flex justify-center items-start">
                 <div 
                   id="pdf-preview"
                   ref={previewRef}
@@ -516,7 +534,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
             {/* Template Selection Modal */}
             {showTemplates && (
               <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowTemplates(false)}>
-                <div className="bg-popover rounded-2xl p-8 max-w-4xl w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="bg-popover rounded-2xl p-8 w-[95vw] sm:max-w-4xl shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-between items-center mb-8">
                     <div>
                       <h3 className="text-2xl font-bold tracking-tight text-foreground">Select a Professional Template</h3>
@@ -524,7 +542,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowTemplates(false)}><X className="h-5 w-5" /></Button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                     {(['modern', 'classic', 'minimal'] as TemplateType[]).map(template => (
                       <button
                         key={template}

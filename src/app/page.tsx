@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { FileScan, FileText, PenTool, Mic, ArrowRight } from "lucide-react"
 import { ActionCard } from "@/components/action-card"
 import { Button } from "@/components/ui/button"
@@ -11,8 +12,17 @@ import { InterviewSetupModal } from "@/components/interview/interview-setup-moda
 import { ResumeAnalysisModal } from "@/components/resume-analysis/resume-analysis-modal"
 import { ResumeBuilderProvider } from "@/hooks/use-resume-builder"
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams()
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+
+  useEffect(() => {
+    const action = searchParams.get("action")
+    const validActions = ["simulate", "cover-letter", "analyze", "create"]
+    if (action && validActions.includes(action)) {
+      setSelectedOption(action)
+    }
+  }, [searchParams])
 
   const buttonColorMap: Record<string, string> = {
       "analyze": "bg-purple-600 hover:bg-purple-700 text-white",
@@ -110,6 +120,14 @@ export default function Home() {
          </div>
       </div>
     </ResumeBuilderProvider>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   )
 }
 

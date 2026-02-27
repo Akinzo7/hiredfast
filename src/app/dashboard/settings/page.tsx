@@ -1,89 +1,299 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { getUserProfile, updateUserProfile } from "@/lib/firestore"
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Loader2,
+  CheckCircle2,
+  X,
+  Camera,
+  Linkedin,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
   const { user } = useAuth()
 
-  const providers = user?.providerData.map((p) => p.providerId) ?? []
-  const hasGoogle = providers.includes("google.com")
-  const hasFacebook = providers.includes("facebook.com")
+  const [fullName, setFullName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [city, setCity] = useState("")
+  const [linkedin, setLinkedin] = useState("")
+
+  const [photoBase64, setPhotoBase64] = useState("")
+  const [localPhotoPreview, setLocalPhotoPreview] = useState("")
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
+
+    getUserProfile(user.uid)
+      .then((profile) => {
+        setFullName(profile?.name || user.displayName || "")
+        setPhone(profile?.phone || "")
+        setCity(profile?.city || "")
+        setLinkedin(profile?.linkedin || "")
+        setPhotoBase64(profile?.photoBase64 || "")
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [user])
+
+  const avatarSrc = localPhotoPreview || photoBase64 || user?.photoURL || null
+  const showRemoveButton = !!(localPhotoPreview || photoBase64)
+  const initials = (fullName || user?.displayName || "U").trim().charAt(0).toUpperCase()
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      setSaveError("Please select an image file.")
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError("Image must be under 5MB.")
+      return
+    }
+
+    setSaveError(null)
+
+    const objectUrl = URL.createObjectURL(file)
+    setLocalPhotoPreview(objectUrl)
+
+    if (typeof window === "undefined") return
+
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    const img = new Image()
+
+    img.onload = () => {
+      const maxSize = 200
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
+      canvas.width = Math.max(1, Math.floor(img.width * ratio))
+      canvas.height = Math.max(1, Math.floor(img.height * ratio))
+      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+      const base64 = canvas.toDataURL("image/jpeg", 0.8)
+      setPhotoBase64(base64)
+      URL.revokeObjectURL(objectUrl)
+      setLocalPhotoPreview(base64)
+    }
+
+    img.onerror = () => {
+      setSaveError("Failed to process the selected image.")
+      URL.revokeObjectURL(objectUrl)
+      setLocalPhotoPreview("")
+    }
+
+    img.src = objectUrl
+  }
+
+  const handleSave = async () => {
+    if (!user) return
+    setIsSaving(true)
+    setSaveError(null)
+    setSaveSuccess(false)
+
+    try {
+      await updateUserProfile(user.uid, {
+        name: fullName,
+        phone,
+        city,
+        linkedin,
+        photoBase64,
+      })
+
+      try {
+        const existingData = localStorage.getItem("hiredfast_resume_data")
+        if (existingData) {
+          const parsed = JSON.parse(existingData)
+          parsed.personalInfo = {
+            ...parsed.personalInfo,
+            fullName,
+            phone,
+            address: city,
+            linkedin,
+          }
+          localStorage.setItem("hiredfast_resume_data", JSON.stringify(parsed))
+        }
+      } catch {}
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch {
+      setSaveError("Failed to save settings. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-8">Settings</h1>
+    <div className="p-6 md:p-8 flex justify-center">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-700/50 bg-slate-900/80 p-5 sm:p-6">
+        <p className="text-sm text-slate-400 text-center mb-6 leading-relaxed">
+          Update your default profile information used across resumes and cover letters.
+        </p>
 
-      <div className="space-y-6">
-        {/* Profile */}
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold mb-4">Profile</h2>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-16 w-16 rounded-full bg-blue-600 flex items-center justify-center shrink-0 overflow-hidden">
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt=""
-                  className="h-full w-full rounded-full object-cover"
-                  referrerPolicy="no-referrer" />
-              ) : (
-                <span className="text-xl font-bold text-white">
-                  {user?.displayName
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2) ?? "U"}
-                </span>
-              )}
-            </div>
-            <div>
-              <p className="font-medium">{user?.displayName}</p>
-              <p className="text-sm text-muted-foreground">
-                {user?.email}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Profile managed by your sign-in provider
-              </p>
-            </div>
-          </div>
-
-          <p className="text-sm font-medium mb-3">
-            Connected Accounts
-          </p>
-          <div className="space-y-2">
-            {[
-              { id: "google.com", label: "Google", connected: hasGoogle },
-              { id: "facebook.com", label: "Facebook", connected: hasFacebook },
-            ].map((provider) => (
-              <div key={provider.id}
-                className="flex items-center justify-between rounded-lg border p-3">
-                <span className="text-sm">{provider.label}</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    provider.connected
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                  {provider.connected ? "Connected" : "Not connected"}
-                </span>
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative mb-4">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Profile"
+                className="h-[120px] w-[120px] rounded-full object-cover border border-slate-700/50"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="h-[120px] w-[120px] rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border border-slate-700/50">
+                <span className="text-4xl font-bold text-white">{initials}</span>
               </div>
-            ))}
+            )}
+
+            {showRemoveButton && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLocalPhotoPreview("")
+                  setPhotoBase64("")
+                  if (fileInputRef.current) fileInputRef.current.value = ""
+                }}
+                className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center absolute -top-1 -right-1 cursor-pointer hover:bg-red-600 transition-colors z-10"
+                aria-label="Remove uploaded photo"
+              >
+                <X className="h-3.5 w-3.5 text-white" />
+              </button>
+            )}
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoSelect}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+          >
+            <Camera className="h-4 w-4" />
+            Change Photo
+          </button>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <div className="relative flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3.5 focus-within:border-blue-500/50 transition-colors">
+            <User className="h-5 w-5 text-slate-400 shrink-0 mr-3" />
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full Name"
+              className="flex-1 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none min-w-0"
+            />
+            {fullName && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 ml-2" />}
+          </div>
+
+          <div className="relative flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3.5 focus-within:border-blue-500/50 transition-colors">
+            <Mail className="h-5 w-5 text-slate-400 shrink-0 mr-3" />
+            <input
+              type="text"
+              value={user?.email || ""}
+              placeholder="Email Address"
+              disabled
+              className="flex-1 bg-transparent text-slate-400 placeholder:text-slate-500 text-sm outline-none min-w-0"
+            />
+            {(user?.email || "") && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 ml-2" />}
+          </div>
+
+          <div className="relative flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3.5 focus-within:border-blue-500/50 transition-colors">
+            <Phone className="h-5 w-5 text-slate-400 shrink-0 mr-3" />
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone Number"
+              className="flex-1 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none min-w-0"
+            />
+            {phone && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 ml-2" />}
+          </div>
+
+          <div className="relative flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3.5 focus-within:border-blue-500/50 transition-colors">
+            <MapPin className="h-5 w-5 text-slate-400 shrink-0 mr-3" />
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+              className="flex-1 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none min-w-0"
+            />
+            {city && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 ml-2" />}
+          </div>
+
+          <div className="relative flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3.5 focus-within:border-blue-500/50 transition-colors">
+            <Linkedin className="h-5 w-5 text-slate-400 shrink-0 mr-3" />
+            <input
+              type="text"
+              value={linkedin}
+              onChange={(e) => setLinkedin(e.target.value)}
+              placeholder="LinkedIn URL"
+              className="flex-1 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none min-w-0"
+            />
+            {linkedin && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 ml-2" />}
           </div>
         </div>
 
-        {/* Plan */}
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold mb-4">Plan</h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Free Plan</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Upgrade for unlimited interviews and advanced features
-              </p>
-            </div>
-            <button disabled
-              className="h-9 px-4 rounded-lg bg-muted text-muted-foreground/50 text-sm font-medium cursor-not-allowed">
-              Upgrade (Coming Soon)
-            </button>
-          </div>
-        </div>
+        {saveError && (
+          <p className="text-sm text-red-400 text-center mb-4">
+            {saveError}
+          </p>
+        )}
+        {saveSuccess && (
+          <p className={cn("text-sm text-center mb-4", "text-green-400")}>
+            Settings saved successfully.
+          </p>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isSaving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5" />
+          )}
+          {isSaving ? "Saving..." : "Save Settings"}
+        </button>
+
+        <p className="text-xs text-slate-500 text-center mt-4 leading-relaxed">
+          These details will be used as defaults when creating new resumes and cover letters.
+        </p>
       </div>
     </div>
   )

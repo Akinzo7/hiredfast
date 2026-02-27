@@ -28,7 +28,7 @@ export default function InterviewsPage() {
     <div className="p-6 md:p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Interview History</h1>
-        <Link href="/"
+        <Link href="/?action=simulate"
           className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors">
           <Plus className="h-4 w-4" /> Practice Now
         </Link>

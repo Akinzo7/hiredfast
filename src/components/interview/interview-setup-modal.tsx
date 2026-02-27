@@ -143,7 +143,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        className="p-0 gap-0 bg-background border-border sm:max-w-[520px]"
+        className="p-0 gap-0 bg-background border-border w-[95vw] sm:max-w-[520px] rounded-xl"
         showCloseButton={false}
       >
         <VisuallyHidden>
@@ -151,13 +151,13 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
         </VisuallyHidden>
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="h-9 w-9 rounded-lg bg-orange-500/20 flex items-center justify-center">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0">
               <Mic className="h-4 w-4 text-orange-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground leading-tight">
                 {activeStep === 1
                   ? "Which resume would you like to use?"
                   : "What role are you interviewing for?"}
@@ -179,7 +179,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-2 max-h-[400px] overflow-y-auto">
+        <div className="px-4 sm:px-6 pb-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
           {activeStep === 1 ? (
             <ResumeSelectionStep
               resumes={resumes}
@@ -204,7 +204,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex items-center justify-between gap-2">
           <Button
             variant="ghost"
             onClick={() => {
@@ -214,12 +214,12 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
             className="text-muted-foreground hover:text-foreground gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            <span className="hidden sm:inline">Back</span>
           </Button>
           <Button
             onClick={handleStartInterview}
             disabled={activeStep === 1 ? !isStep1Valid : !isStep2Valid}
-            className="bg-orange-600 hover:bg-orange-700 text-white gap-2 px-6"
+            className="bg-orange-600 hover:bg-orange-700 text-white gap-2 px-4 sm:px-6"
           >
             {activeStep === 1 ? "Start Interview Simulation" : "Continue"}
           </Button>

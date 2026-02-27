@@ -3,8 +3,6 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -62,9 +60,16 @@ interface TemplateSelectionModalProps {
   onOpenChange: (open: boolean) => void
   selectedTemplateId: string
   onSelectTemplate: (id: string) => void
+  accentColor: string
 }
 
-export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId, onSelectTemplate }: TemplateSelectionModalProps) {
+export function TemplateSelectionModal({
+  open,
+  onOpenChange,
+  selectedTemplateId,
+  onSelectTemplate,
+  accentColor,
+}: TemplateSelectionModalProps) {
   const [activeCategory, setActiveCategory] = useState<TemplateCategory>("All")
 
   const filteredTemplates = activeCategory === "All" 
@@ -116,6 +121,7 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
                               key={template.id} 
                               template={template} 
                               isSelected={selectedTemplateId === template.id} 
+                              accentColor={accentColor}
                               onSelect={() => {
                                 onSelectTemplate(template.id)
                                 onOpenChange(false)
@@ -135,6 +141,7 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
                               key={template.id} 
                               template={template} 
                               isSelected={selectedTemplateId === template.id} 
+                              accentColor={accentColor}
                               onSelect={() => {
                                 onSelectTemplate(template.id)
                                 onOpenChange(false)
@@ -151,7 +158,14 @@ export function TemplateSelectionModal({ open, onOpenChange, selectedTemplateId,
   )
 }
 
-function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOption, isSelected: boolean, onSelect: () => void }) {
+interface TemplateCardProps {
+  template: TemplateOption
+  isSelected: boolean
+  onSelect: () => void
+  accentColor: string
+}
+
+function TemplateCard({ template, isSelected, onSelect, accentColor }: TemplateCardProps) {
   return (
     <div 
       onClick={onSelect}
@@ -162,22 +176,21 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
           : "border-border shadow-sm hover:shadow-xl hover:border-primary/50 hover:-translate-y-1"
       )}
     >
-       {/* Preview Image Placeholder */}
-       <div className={cn(
-          "aspect-[1/1.414] w-full relative overflow-hidden",
-          template.thumbnailBg
-       )}>
-          {/* Mock Document visuals */}
-          <div className="absolute top-4 left-4 right-4 h-full bg-background shadow-sm rounded-t-sm p-3 opacity-90 transform origin-top hover:scale-[1.02] transition-transform duration-500">
-              <div className="h-4 w-2/3 bg-slate-800 rounded mb-2 opacity-20" />
-              <div className="h-2 w-1/3 bg-blue-500 rounded mb-4 opacity-20" />
-              <div className="space-y-1">
-                 <div className="h-1 w-full bg-slate-200 rounded" />
-                 <div className="h-1 w-full bg-slate-200 rounded" />
-                 <div className="h-1 w-3/4 bg-slate-200 rounded" />
-              </div>
+       <div className="relative overflow-hidden w-full" style={{ height: "138px" }}>
+          <div
+            style={{
+              transform: "scale(0.35)",
+              transformOrigin: "top left",
+              width: "280px",
+              pointerEvents: "none",
+              position: "absolute",
+              top: 0,
+              left: 0,
+            }}
+          >
+            <TemplateThumbnail templateId={template.id} accentColor={accentColor} />
           </div>
-          
+
           {/* Selected Overlay */}
           {isSelected && (
             <div className="absolute inset-0 bg-blue-900/10 flex items-center justify-center backdrop-blur-[1px]">
@@ -195,6 +208,176 @@ function TemplateCard({ template, isSelected, onSelect }: { template: TemplateOp
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
        </div>
+    </div>
+  )
+}
+
+interface TemplateThumbnailProps {
+  templateId: string
+  accentColor: string
+}
+
+function TemplateThumbnail({ templateId, accentColor }: TemplateThumbnailProps) {
+  const name = "Alex Johnson"
+  const role = "Senior Product Designer"
+  const company = "Google"
+  const skills = "Figma - React - Strategy"
+  const summary = "Creative designer with 8+ years of experience building..."
+  const achievement = "Led redesign increasing conversion by 40%"
+
+  const isSidebar = ["modern", "spotlight", "tech", "startup", "dynamic"].includes(templateId)
+  const isClassic = ["classic", "corporate", "executive", "standard", "academic"].includes(templateId)
+  const isHeader = ["horizon", "vibrant", "creative"].includes(templateId)
+  const inner = "w-[280px] bg-white overflow-hidden border border-slate-100"
+
+  if (isSidebar) {
+    return (
+      <div className={inner} style={{ height: "396px" }}>
+        <div className="flex h-full">
+          <div className="w-[35%] h-full p-4 space-y-3 text-white" style={{ backgroundColor: accentColor }}>
+            <div className="w-8 h-8 rounded-full bg-white/20 mb-2" />
+            <div className="text-[8px] font-semibold truncate">{name}</div>
+            <div className="text-[6px] opacity-80 truncate">{skills}</div>
+            <div className="h-px w-full bg-white/20 mt-2 mb-2" />
+            <div className="space-y-1">
+              <div className="h-1 w-full bg-white/20 rounded" />
+              <div className="h-1 w-5/6 bg-white/20 rounded" />
+              <div className="h-1 w-4/6 bg-white/20 rounded" />
+            </div>
+            <div className="h-px w-full bg-white/20 mt-2 mb-2" />
+            <div className="space-y-1">
+              <div className="h-1 w-full bg-white/20 rounded" />
+              <div className="h-1 w-2/3 bg-white/20 rounded" />
+            </div>
+          </div>
+          <div className="flex-1 p-4 space-y-3">
+            <div>
+              <div className="text-[11px] font-bold truncate mb-1" style={{ color: accentColor }}>
+                {name}
+              </div>
+              <div className="h-2 w-1/2 bg-slate-300 rounded mb-2" />
+              <div className="text-[7px] text-slate-400 truncate">{role}</div>
+            </div>
+            <div className="h-px bg-slate-100" />
+            <div className="space-y-1.5">
+              <div className="text-[7px] font-semibold uppercase tracking-wide truncate" style={{ color: accentColor }}>
+                Experience
+              </div>
+              <div className="h-2.5 w-3/4 bg-slate-800 rounded opacity-80" />
+              <div className="h-1.5 w-1/2 bg-slate-400 rounded" />
+              <div className="h-1 w-full bg-slate-200 rounded" />
+              <div className="h-1 w-5/6 bg-slate-200 rounded" />
+              <div className="text-[6px] text-slate-400 truncate">{achievement}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isClassic) {
+    return (
+      <div className={inner} style={{ height: "396px" }}>
+        <div className="p-5 space-y-3">
+          <div className="text-center pb-3 border-b-2" style={{ borderColor: accentColor }}>
+            <div className="text-[10px] font-bold text-slate-800 tracking-wide uppercase truncate">{name}</div>
+            <div className="text-[7px] text-slate-500 mt-1 truncate">{role}</div>
+            <div className="flex justify-center gap-2 mt-1">
+              <div className="h-1 w-16 bg-slate-300 rounded" />
+              <div className="h-1 w-16 bg-slate-300 rounded" />
+            </div>
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className="h-2 w-1/3 bg-slate-100 mb-1.5 flex items-center pl-1 border-l-2" style={{ borderColor: accentColor }}>
+                <span className="text-[6px] font-semibold uppercase tracking-wide truncate text-slate-500">Section</span>
+              </div>
+              <div className="space-y-1 ml-1">
+                <div className="h-2 w-2/3 bg-slate-700 rounded" />
+                <div className="h-1 w-full bg-slate-200 rounded" />
+                <div className="h-1 w-5/6 bg-slate-200 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (isHeader) {
+    return (
+      <div className={inner} style={{ height: "396px" }}>
+        <div className="p-5 text-white" style={{ backgroundColor: accentColor }}>
+          <div className="text-[10px] font-bold truncate">{name}</div>
+          <div className="text-[7px] opacity-80 truncate mt-1">{role}</div>
+          <div className="flex gap-2 mt-2">
+            <div className="h-1 w-14 bg-white/40 rounded" />
+            <div className="h-1 w-14 bg-white/40 rounded" />
+          </div>
+        </div>
+        <div className="flex gap-3 p-4">
+          <div className="flex-1 space-y-2">
+            <div className="text-[7px] font-semibold uppercase tracking-wide truncate" style={{ color: accentColor }}>
+              Experience
+            </div>
+            <div className="h-1 w-full bg-slate-200 rounded" />
+            <div className="h-1 w-5/6 bg-slate-200 rounded" />
+            <div className="h-1 w-4/6 bg-slate-200 rounded" />
+            <div className="text-[7px] font-semibold uppercase tracking-wide truncate mt-2" style={{ color: accentColor }}>
+              Projects
+            </div>
+            <div className="h-1 w-full bg-slate-200 rounded" />
+            <div className="h-1 w-3/4 bg-slate-200 rounded" />
+            <div className="text-[6px] text-slate-400 truncate">{company}</div>
+          </div>
+          <div className="w-16 space-y-2">
+            <div className="h-12 rounded-lg bg-slate-100 p-1.5 space-y-1">
+              <div className="h-1 w-full bg-slate-300 rounded" />
+              <div className="h-1 w-3/4 bg-slate-300 rounded" />
+            </div>
+            <div className="h-12 rounded-lg bg-slate-100 p-1.5 space-y-1">
+              <div className="h-1 w-full bg-slate-300 rounded" />
+              <div className="h-1 w-2/3 bg-slate-300 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={inner} style={{ height: "396px" }}>
+      <div className="p-5 space-y-3">
+        <div className="pb-2">
+          <div className="text-[11px] font-semibold text-slate-800 truncate">{name}</div>
+          <div className="text-[7px] text-slate-500 truncate mt-1">{summary}</div>
+        </div>
+        <div className="flex gap-3">
+          <div className="w-16 space-y-3">
+            <div>
+              <div className="h-1 w-full rounded mb-1" style={{ backgroundColor: accentColor, opacity: 0.4 }} />
+              <div className="space-y-0.5">
+                <div className="h-1 w-full bg-slate-200 rounded" />
+                <div className="h-1 w-3/4 bg-slate-200 rounded" />
+              </div>
+            </div>
+            <div>
+              <div className="h-1 w-full rounded mb-1" style={{ backgroundColor: accentColor, opacity: 0.4 }} />
+              <div className="space-y-0.5">
+                <div className="h-1 w-full bg-slate-200 rounded" />
+                <div className="h-1 w-2/3 bg-slate-200 rounded" />
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 space-y-2">
+            <div className="h-1 w-full rounded mb-1" style={{ backgroundColor: accentColor, opacity: 0.4 }} />
+            <div className="h-2 w-2/3 bg-slate-700 rounded" />
+            <div className="h-1 w-full bg-slate-200 rounded" />
+            <div className="h-1 w-5/6 bg-slate-200 rounded" />
+            <div className="h-1 w-4/6 bg-slate-200 rounded" />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

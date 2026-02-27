@@ -27,7 +27,7 @@ export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuild
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="w-[95vw] sm:max-w-[700px] h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0 rounded-xl">
         <VisuallyHidden>
           <DialogTitle>Resume Builder Modal</DialogTitle>
         </VisuallyHidden>
@@ -95,7 +95,7 @@ function ResumeBuilderContent() {
 
   return (
     <>
-        <DialogHeader className="px-6 py-4 border-b shrink-0">
+        <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
           <div className="flex items-center justify-between mb-2 pr-8">
              <DialogTitle className="text-xl">Resume Builder</DialogTitle>
              <span className="text-sm text-muted-foreground">Step {currentStep} of {totalSteps}</span>
@@ -109,11 +109,11 @@ function ResumeBuilderContent() {
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 scroll-smooth">
            {renderStep()}
         </div>
 
-        <div className="p-6 border-t bg-background shrink-0 flex justify-between">
+        <div className="p-4 sm:p-6 border-t bg-background shrink-0 flex justify-between">
            <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
              Back
            </Button>

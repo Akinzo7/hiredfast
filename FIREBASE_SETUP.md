@@ -66,3 +66,14 @@
 
 Note: Wrap FIREBASE_PRIVATE_KEY in double quotes and keep the \n 
 characters as literal \n in the .env.local file.
+
+## 6. Configure Middleware Session Verification Secret
+Add this to `.env.local`:
+
+`MIDDLEWARE_SECRET=<generate with: openssl rand -hex 32>`
+
+Requirements:
+- At least 32 characters long
+- Randomly generated (example command: `openssl rand -hex 32`)
+- Never commit real secret values to version control
+- Set the same variable in deployment environments (for example Vercel Production and Preview)

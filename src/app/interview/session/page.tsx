@@ -73,13 +73,13 @@ export default function InterviewSessionPage() {
     if (typeof window === "undefined") return
     const title = localStorage.getItem("hiredfast_interview_job_title") || "Interview"
     const company = localStorage.getItem("hiredfast_interview_company") || ""
-    const hasResume = localStorage.getItem("hiredfast_interview_resume_text")
-    const hasJD = localStorage.getItem("hiredfast_interview_job_description")
+    const hasResume = (localStorage.getItem("hiredfast_interview_resume_text") ?? "").trim().length >= 50
+    const hasJD = (localStorage.getItem("hiredfast_interview_job_description") ?? "").trim().length >= 50
 
     setJobTitle(title)
     setCompanyName(company)
 
-    if (!hasResume && !hasJD) {
+    if (!hasResume || !hasJD) {
       router.replace("/")
       return
     }
@@ -250,9 +250,9 @@ export default function InterviewSessionPage() {
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="text-center flex-1">
-          <h1 className="text-sm font-bold text-foreground">{jobTitle || "Interview"}</h1>
-          {companyName && <p className="text-xs text-muted-foreground">{companyName}</p>}
+        <div className="text-center flex-1 flex flex-col items-center">
+          <h1 className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[160px] sm:max-w-none">{jobTitle || "Interview"}</h1>
+          {companyName && <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[160px] sm:max-w-none">{companyName}</p>}
           <div className="flex items-center justify-center gap-3 mt-1.5">
             <span className="text-[10px] text-muted-foreground font-medium">
               Part {Math.min(currentQuestionNumber, totalQuestions)} of {totalQuestions}
@@ -292,29 +292,29 @@ export default function InterviewSessionPage() {
         <div className="px-4 grid grid-cols-2 gap-3 shrink-0">
           {/* You card */}
           <div className={cn(
-            "rounded-2xl border bg-card p-4 flex flex-col items-center justify-center min-h-[180px] transition-all",
+            "rounded-2xl border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-h-[140px] sm:min-h-[180px] transition-all",
             isRecording
               ? "border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
               : "border-border"
           )}>
             <div className={cn(
-              "h-16 w-16 rounded-full overflow-hidden bg-muted mb-3 ring-2 transition-all",
+              "h-12 w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-muted mb-3 ring-2 transition-all",
               isRecording ? "ring-green-500 ring-offset-2 ring-offset-background" : "ring-transparent"
             )}>
               <img src={USER_AVATAR} alt="You" className="h-full w-full object-cover" />
             </div>
-            <p className="text-sm font-semibold text-foreground">You</p>
+            <p className="text-xs sm:text-sm font-semibold text-foreground">You</p>
             <p className="text-[10px] text-muted-foreground">Interview Candidate</p>
           </div>
 
           {/* Emilia card */}
-          <div className="rounded-2xl border border-border bg-card p-4 flex flex-col items-center justify-center min-h-[180px] relative">
+          <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-h-[140px] sm:min-h-[180px] relative">
             {(status === "generating" || isSpeaking) && (
               <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
                 Active
               </span>
             )}
-            <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-700 mb-3 ring-2 ring-transparent flex items-center justify-center">
+            <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-slate-700 mb-3 ring-2 ring-transparent flex items-center justify-center">
               {imgError ? (
                 <span className="text-lg font-bold text-muted-foreground">EZ</span>
               ) : (
@@ -327,11 +327,11 @@ export default function InterviewSessionPage() {
               )}
               {status === "generating" && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full border-2 border-blue-500/30 animate-ping" />
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-blue-500/30 animate-ping" />
                 </div>
               )}
             </div>
-            <p className="text-sm font-semibold text-foreground">{INTERVIEWER_NAME}</p>
+            <p className="text-xs sm:text-sm font-semibold text-foreground">{INTERVIEWER_NAME}</p>
             <p className="text-[10px] text-muted-foreground">{jobTitle || "Interviewer"}</p>
 
             {/* Card action buttons */}
@@ -372,7 +372,7 @@ export default function InterviewSessionPage() {
               </span>
               <div
                 className={cn(
-                  "px-4 py-3 rounded-2xl text-sm leading-relaxed",
+                  "px-4 py-3 rounded-2xl text-sm leading-relaxed break-words",
                   msg.role === "ai"
                     ? "bg-muted text-foreground rounded-tl-md"
                     : "bg-blue-600/20 text-blue-700 dark:text-blue-100 rounded-tr-md"
@@ -386,7 +386,7 @@ export default function InterviewSessionPage() {
           {status === "generating" && (
             <div className="flex flex-col max-w-[85%] mr-auto items-start">
               <span className="text-[10px] text-slate-500 mb-1 px-1">Emilia</span>
-              <div className="px-4 py-3 rounded-2xl bg-muted rounded-tl-md">
+              <div className="px-4 py-3 rounded-2xl bg-muted rounded-tl-md break-words">
                 <div className="flex gap-1">
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
@@ -410,7 +410,7 @@ export default function InterviewSessionPage() {
 
         {/* Chat input panel */}
         {showChatInput && (
-          <div className="border-t border-border bg-card p-4 animate-in slide-in-from-bottom duration-200">
+          <div className="border-t border-border bg-card p-4 animate-in slide-in-from-bottom duration-200 sticky bottom-0">
             <div className="flex gap-2">
               <Textarea
                 value={chatText}
@@ -440,10 +440,10 @@ export default function InterviewSessionPage() {
       </div>
 
       {/* Bottom toolbar */}
-      <div className="border-t border-border bg-background px-4 py-3">
-        <div className="flex items-center justify-center gap-3">
+      <div className="border-t border-border bg-background px-2 sm:px-4 py-3">
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
           {/* More */}
-          <button className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors">
+          <button className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors">
             <MoreHorizontal className="h-5 w-5" />
           </button>
 
@@ -453,7 +453,7 @@ export default function InterviewSessionPage() {
               onClick={toggleRecording}
               disabled={status !== "active"}
               className={cn(
-                "h-14 w-14 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-40",
+                "h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-40",
                 isRecording
                   ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse"
                   : "bg-red-500 hover:bg-red-600"
@@ -466,7 +466,7 @@ export default function InterviewSessionPage() {
           )}
 
           {/* Pause */}
-          <button className="h-12 w-12 rounded-full bg-amber-700 flex items-center justify-center text-white hover:bg-amber-600 transition-colors">
+          <button className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-amber-700 flex items-center justify-center text-white hover:bg-amber-600 transition-colors">
             <Pause className="h-5 w-5" />
           </button>
 
@@ -474,7 +474,7 @@ export default function InterviewSessionPage() {
           <button
             onClick={() => setShowChatInput(!showChatInput)}
             className={cn(
-              "h-12 w-12 rounded-full flex items-center justify-center text-white transition-colors",
+              "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center text-white transition-colors",
               showChatInput ? "bg-purple-500" : "bg-purple-600 hover:bg-purple-500"
             )}
           >
@@ -485,7 +485,7 @@ export default function InterviewSessionPage() {
           <button
             onClick={handleSkip}
             disabled={status !== "active"}
-            className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-40"
           >
             <SkipForward className="h-5 w-5" />
           </button>
@@ -493,7 +493,7 @@ export default function InterviewSessionPage() {
           {/* End call */}
           <button
             onClick={() => setShowEndConfirm(true)}
-            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition-colors"
           >
             <PhoneOff className="h-5 w-5" />
           </button>

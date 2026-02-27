@@ -60,23 +60,36 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        {[
-          { label: "Resumes Created", value: counts.resumes,
-            icon: FileText, color: "text-blue-500" },
-          { label: "Interviews Practiced", value: counts.interviews,
-            icon: Mic, color: "text-orange-500" },
-          { label: "Cover Letters", value: counts.letters,
-            icon: Mail, color: "text-green-500" },
-        ].map((stat) => (
-          <div key={stat.label}
-            className="rounded-xl border bg-card p-4">
-            <stat.icon className={cn("h-5 w-5 mb-2", stat.color)} />
-            <div className="text-2xl font-bold">{stat.value}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {stat.label}
+        {!loaded ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={`stat-skeleton-${index}`}
+              className="rounded-xl border bg-card p-4"
+            >
+              <div className="h-5 w-5 mb-2 rounded bg-muted animate-pulse" />
+              <div className="h-7 w-12 rounded bg-muted animate-pulse mb-1" />
+              <div className="h-3 w-24 rounded bg-muted animate-pulse" />
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          [
+            { label: "Resumes Created", value: counts.resumes,
+              icon: FileText, color: "text-blue-500" },
+            { label: "Interviews Practiced", value: counts.interviews,
+              icon: Mic, color: "text-orange-500" },
+            { label: "Cover Letters", value: counts.letters,
+              icon: Mail, color: "text-green-500" },
+          ].map((stat) => (
+            <div key={stat.label}
+              className="rounded-xl border bg-card p-4">
+              <stat.icon className={cn("h-5 w-5 mb-2", stat.color)} />
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {stat.label}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -112,7 +125,27 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Interviews */}
-      {recentInterviews.length > 0 && (
+      {!loaded ? (
+        <div>
+          <h2 className="text-base font-semibold mb-4">
+            Recent Interviews
+          </h2>
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div
+                key={`recent-interview-skeleton-${index}`}
+                className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between"
+              >
+                <div className="space-y-1.5">
+                  <div className="h-3.5 w-32 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+                </div>
+                <div className="h-7 w-14 rounded-full bg-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : recentInterviews.length > 0 ? (
         <div>
           <h2 className="text-base font-semibold mb-4">
             Recent Interviews
@@ -147,7 +180,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

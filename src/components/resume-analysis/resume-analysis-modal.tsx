@@ -275,7 +275,7 @@ export function ResumeAnalysisModal({
       </div>
 
       {/* Search + Upload */}
-      <div className="px-6 pb-3 flex items-center gap-3">
+      <div className="px-4 sm:px-6 pb-3 flex items-center gap-2 sm:gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
           <input
@@ -310,16 +310,16 @@ export function ResumeAnalysisModal({
 
       {/* Upload error */}
       {uploadError && (
-        <p className="px-6 pb-2 text-sm text-red-500">{uploadError}</p>
+        <p className="px-4 sm:px-6 pb-2 text-sm text-red-500">{uploadError}</p>
       )}
 
       {/* Analysis error (if previous attempt failed) */}
       {analysisError && (
-        <p className="px-6 pb-2 text-sm text-red-500">{analysisError}</p>
+        <p className="px-4 sm:px-6 pb-2 text-sm text-red-500">{analysisError}</p>
       )}
 
       {/* Resume List */}
-      <div className="px-6 pb-2 max-h-[380px] overflow-y-auto space-y-2">
+      <div className="px-4 sm:px-6 pb-2 max-h-[45vh] sm:max-h-[380px] overflow-y-auto space-y-2">
         {filteredResumes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14">
             <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
@@ -371,7 +371,7 @@ export function ResumeAnalysisModal({
       </div>
 
       {/* Bottom bar */}
-      <div className="px-6 py-4 border-t border-border flex items-center justify-between mt-2">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex items-center justify-between mt-2">
         <Button
           variant="ghost"
           onClick={() => setOpen(false)}
@@ -447,7 +447,7 @@ export function ResumeAnalysisModal({
         </div>
 
         {/* Score Row */}
-        <div className="px-6 mb-6 flex items-center gap-6">
+        <div className="px-4 sm:px-6 mb-4 sm:mb-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <ScoreCircle score={score} />
           <div className="flex flex-col gap-3">
             <p className={cn("text-2xl font-bold", statusColor)}>
@@ -458,7 +458,7 @@ export function ResumeAnalysisModal({
                 setOpen(false)
                 router.push("/resume/editor")
               }}
-              className="inline-flex items-center gap-2 px-5 h-10 rounded-lg text-sm font-semibold text-white w-fit bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 transition-all"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-semibold text-white w-full sm:w-auto justify-center bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 transition-all"
             >
               Improve Resume
               <ArrowRight className="h-4 w-4" />
@@ -467,7 +467,7 @@ export function ResumeAnalysisModal({
         </div>
 
         {/* Score Breakdown */}
-        <div className="px-6 pb-6">
+        <div className="px-3 sm:px-6 pb-4 sm:pb-6">
           <p className="text-sm font-semibold text-foreground text-center mb-3">
             Score Breakdown
           </p>
@@ -488,7 +488,7 @@ export function ResumeAnalysisModal({
                   {/* Row header */}
                   <div
                     onClick={() => toggleCategory(category.name)}
-                    className="flex items-center justify-between px-4 py-3.5 bg-card hover:bg-accent cursor-pointer transition-colors select-none"
+                    className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3.5 bg-card hover:bg-accent cursor-pointer transition-colors select-none"
                   >
                     {/* Category name */}
                     <span className="text-sm font-medium text-foreground flex-1 min-w-0 mr-4">
@@ -497,7 +497,7 @@ export function ResumeAnalysisModal({
 
                     {/* Progress bar + score */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-28 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="w-16 sm:w-28 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all duration-700",
@@ -524,7 +524,7 @@ export function ResumeAnalysisModal({
 
                   {/* Expanded feedback */}
                   {isExpanded && (
-                    <div className="px-4 py-3 bg-muted/50 border-t border-border space-y-2">
+                    <div className="px-3 sm:px-4 py-3 bg-muted/50 border-t border-border space-y-2">
                       {category.feedback.map((point, i) => {
                         const isPositive = point.startsWith("✓")
                         return (
@@ -566,7 +566,7 @@ export function ResumeAnalysisModal({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
         className={cn(
-          "p-0 gap-0 bg-background border-border overflow-hidden",
+          "p-0 gap-0 bg-background border-border overflow-hidden w-[95vw] rounded-xl",
           view === "results"
             ? "sm:max-w-[620px] max-h-[90vh] overflow-y-auto"
             : "sm:max-w-[620px]"
@@ -585,7 +585,7 @@ export function ResumeAnalysisModal({
 
         {/* Show error if analysis failed */}
         {analysisError && view === "selection" && (
-          <div className="px-6 pb-2">
+          <div className="px-4 sm:px-6 pb-2">
             <p className="text-sm text-red-500">{analysisError}</p>
           </div>
         )}

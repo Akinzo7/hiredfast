@@ -9,7 +9,7 @@ const PROTECTED_ROUTES = [
   "/interview/results",
 ]
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isProtected = PROTECTED_ROUTES.some(
@@ -19,16 +19,46 @@ export function middleware(request: NextRequest) {
 
   if (!isProtected) return NextResponse.next()
 
-  // Check for Firebase session cookie
-  const session = request.cookies.get("firebase-session")?.value
-
-  if (!session) {
+  const sessionCookie = request.cookies.get("firebase-session")?.value
+  if (!sessionCookie) {
     const loginUrl = new URL("/auth/login", request.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  return NextResponse.next()
+  const verifyUrl = new URL("/api/auth/verify", request.url).toString()
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const response = await fetch(verifyUrl, {
+      method: "GET",
+      headers: {
+        "x-session-cookie": sessionCookie,
+        "x-internal-secret": process.env.MIDDLEWARE_SECRET ?? "",
+      },
+      signal: controller.signal,
+    })
+
+    const data = await response.json()
+    if (data.valid === true) {
+      return NextResponse.next()
+    }
+
+    const loginUrl = new URL("/auth/login", request.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
+    const redirectResponse = NextResponse.redirect(loginUrl)
+    redirectResponse.cookies.delete("firebase-session")
+    return redirectResponse
+  } catch {
+    const loginUrl = new URL("/auth/login", request.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
+    const redirectResponse = NextResponse.redirect(loginUrl)
+    redirectResponse.cookies.delete("firebase-session")
+    return redirectResponse
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 export const config = {

@@ -2,12 +2,16 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   query,
   orderBy,
   serverTimestamp,
   Timestamp,
+  doc,
+  updateDoc,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import type { ResumeData } from "@/hooks/use-resume-builder"
 
 // ---- RESUMES ----
 
@@ -34,6 +38,7 @@ export async function getResumes(userId: string) {
     id: d.id,
     ...(d.data() as {
       title: string
+      data?: ResumeData
       createdAt: Timestamp
       updatedAt: Timestamp
     }),
@@ -105,4 +110,43 @@ export async function getCoverLetters(userId: string) {
       createdAt: Timestamp
     }),
   }))
+}
+
+// ---- USER PROFILE ----
+
+export async function updateUserProfile(
+  userId: string,
+  data: {
+    name?: string
+    phone?: string
+    city?: string
+    linkedin?: string
+    photoBase64?: string
+  }
+): Promise<void> {
+  const userRef = doc(db, "users", userId)
+  await updateDoc(userRef, data)
+}
+
+export async function getUserProfile(
+  userId: string
+): Promise<{
+  phone?: string
+  city?: string
+  linkedin?: string
+  photoBase64?: string
+  name?: string
+  email?: string
+} | null> {
+  const userRef = doc(db, "users", userId)
+  const snap = await getDoc(userRef)
+  if (!snap.exists()) return null
+  return snap.data() as {
+    phone?: string
+    city?: string
+    linkedin?: string
+    photoBase64?: string
+    name?: string
+    email?: string
+  }
 }
