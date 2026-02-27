@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react"
 import { useResumeBuilder, ResumeData } from "@/hooks/use-resume-builder"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, ZoomIn, ZoomOut, Type, Palette, ChevronDown, Loader2 } from "lucide-react"
+import { Download, ZoomIn, ZoomOut, Type, Palette, ChevronDown, Loader2, Cloud, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import { useDebounce } from "use-debounce"
+import { useAuth } from "@/contexts/auth-context"
+import { saveResume } from "@/lib/firestore"
 
 import { TemplateSelectionModal } from "./template-selection-modal"
 
@@ -93,6 +95,7 @@ const serializeResumeToText = (data: ResumeData): string => {
 
 export function PreviewPanel() {
   const { resumeData } = useResumeBuilder()
+  const { user } = useAuth()
   const [scale, setScale] = useState(
     typeof window !== "undefined" && window.innerWidth < 768 ? 0.4 : 0.8
   )
@@ -106,11 +109,13 @@ export function PreviewPanel() {
   const [showCategories, setShowCategories] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [preferencesLoaded, setPreferencesLoaded] = useState(false)
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [debouncedResumeData] = useDebounce(resumeData, 3000)
   const resumeRef = useRef<HTMLDivElement | null>(null)
   const colorInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const userAdjustedScale = useRef(false)
+  const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleDownload = async () => {
     if (!resumeRef.current) return;
@@ -160,6 +165,33 @@ export function PreviewPanel() {
       simple: "Simple"
     }
     return names[id] || "Select Template"
+  }
+
+  const handleSave = async () => {
+    if (!user || saveState === "saving") return
+
+    if (saveStatusTimeoutRef.current) {
+      clearTimeout(saveStatusTimeoutRef.current)
+      saveStatusTimeoutRef.current = null
+    }
+
+    setSaveState("saving")
+    try {
+      const title = resumeData.personalInfo.fullName?.trim() || "Untitled Resume"
+      await saveResume(user.uid, title, resumeData)
+      setSaveState("saved")
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveState("idle")
+        saveStatusTimeoutRef.current = null
+      }, 2000)
+    } catch (error) {
+      console.error("Failed to save resume:", error)
+      setSaveState("error")
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveState("idle")
+        saveStatusTimeoutRef.current = null
+      }, 3000)
+    }
   }
 
   useEffect(() => {
@@ -275,6 +307,14 @@ export function PreviewPanel() {
 
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current)
+      }
+    }
   }, [])
 
   const scoreValue = aiScore ?? 0
@@ -425,6 +465,33 @@ export function PreviewPanel() {
                      <SelectItem value="roboto">Roboto</SelectItem>
                  </SelectContent>
              </Select>
+
+             {user && (
+               <Button
+                 onClick={handleSave}
+                 disabled={saveState === "saving" || saveState === "error"}
+                 className={cn(
+                   "gap-2 h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white",
+                   saveState === "error" && "text-red-200 disabled:opacity-100"
+                 )}
+               >
+                 {saveState === "saving" ? (
+                   <>
+                     <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+                   </>
+                 ) : saveState === "saved" ? (
+                   <>
+                     <CheckCircle2 className="h-4 w-4" /> Saved!
+                   </>
+                 ) : saveState === "error" ? (
+                   "Save failed"
+                 ) : (
+                   <>
+                     <Cloud className="h-4 w-4" /> Save
+                   </>
+                 )}
+               </Button>
+             )}
 
              <Button className="gap-2 h-9 px-4" onClick={handleDownload}>
                  <Download className="h-4 w-4" /> Download

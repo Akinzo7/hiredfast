@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useResumeBuilder } from "@/hooks/use-resume-builder"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Plus, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 
@@ -21,6 +21,7 @@ import { SummaryStep } from "@/components/resume-builder/steps/summary-step"
 import { AddSectionModal } from "@/components/resume-builder/add-section-modal"
 
 export function EditorSidebar() {
+  const { user } = useAuth()
   const { 
     resumeData,
     updatePersonalInfo,
@@ -37,6 +38,33 @@ export function EditorSidebar() {
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["personal"])
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState(0)
+  const [timeTick, setTimeTick] = useState(0)
+  const autosaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLastSavedAt(Date.now())
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [resumeData])
+
+  useEffect(() => {
+    const startTimeoutId = setTimeout(() => {
+      setTimeTick(Date.now())
+    }, 0)
+
+    autosaveIntervalRef.current = setInterval(() => {
+      setTimeTick(Date.now())
+    }, 30000)
+
+    return () => {
+      clearTimeout(startTimeoutId)
+      if (autosaveIntervalRef.current) {
+        clearInterval(autosaveIntervalRef.current)
+      }
+    }
+  }, [])
 
   const handleExpandAll = () => {
     // dynamically include custom sections
@@ -54,6 +82,23 @@ export function EditorSidebar() {
 
   const removeCustomSection = (id: string) => {
     setCustomSections(resumeData.customSections.filter(s => s.id !== id))
+  }
+
+  const getRelativeLastSaved = (savedAtMs: number, nowMs: number) => {
+    if (!savedAtMs || !nowMs) return "just now"
+
+    const diffMs = Math.max(0, nowMs - savedAtMs)
+    const minutes = Math.floor(diffMs / 60000)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (minutes < 1) return "just now"
+    if (minutes === 1) return "1 minute ago"
+    if (minutes < 60) return `${minutes} minutes ago`
+    if (hours === 1) return "1 hour ago"
+    if (hours < 24) return `${hours} hours ago`
+    if (days === 1) return "1 day ago"
+    return `${days} days ago`
   }
 
   return (
@@ -86,6 +131,15 @@ export function EditorSidebar() {
                 Collapse All
             </Button>
          </div>
+      </div>
+
+      <div className="text-xs text-muted-foreground text-center px-4 py-2 border-b bg-background">
+        <p>
+          {user
+            ? "Changes are saved locally. Use the Save button in the preview panel to back up to the cloud."
+            : "Changes are saved locally. Log in to back up your resume to the cloud."}
+        </p>
+        <p className="mt-1">Last saved locally: {getRelativeLastSaved(lastSavedAt, timeTick)}</p>
       </div>
 
       {/* Scrollable Content */}

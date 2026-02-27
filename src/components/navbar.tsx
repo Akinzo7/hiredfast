@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Box, ChevronDown, LayoutDashboard, 
@@ -14,15 +15,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/auth-context"
+import { getUserProfile } from "@/lib/firestore"
 
 export function Navbar() {
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
+  const [profileData, setProfileData] = useState<{ uid: string; photoBase64: string } | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!user) {
+      return () => {
+        isMounted = false
+      }
+    }
+
+    const loadProfile = async () => {
+      try {
+        const profile = await getUserProfile(user.uid)
+        if (!isMounted) return
+        setProfileData({
+          uid: user.uid,
+          photoBase64: profile?.photoBase64?.trim() || "",
+        })
+      } catch {
+        if (!isMounted) return
+        setProfileData({
+          uid: user.uid,
+          photoBase64: "",
+        })
+      }
+    }
+
+    void loadProfile()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
     router.push("/")
   }
+
+  const firestorePhoto = user && profileData?.uid === user.uid ? profileData.photoBase64 : ""
+  const avatarSrc = firestorePhoto || user?.photoURL || ""
 
   return (
     <header className="flex h-16 w-full shrink-0 items-center justify-between border-b bg-background px-4 md:px-6">
@@ -56,9 +95,9 @@ export function Navbar() {
               <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 hover:bg-accent transition-colors outline-none">
                 {/* Avatar */}
                 <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden shrink-0">
-                  {user.photoURL ? (
+                  {avatarSrc ? (
                     <img
-                      src={user.photoURL}
+                      src={avatarSrc}
                       alt={user.displayName ?? "User"}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"

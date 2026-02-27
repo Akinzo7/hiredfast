@@ -100,7 +100,7 @@ export default function InterviewResultsPage() {
 
   const handleGoHome = () => {
     resetInterview()
-    router.push("/")
+    router.push("/dashboard")
   }
 
   if (loading) {

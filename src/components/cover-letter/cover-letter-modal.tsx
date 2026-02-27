@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { useResumeBuilder } from "@/hooks/use-resume-builder"
+import { useEffect, useState, useRef } from "react"
+import { useResumeBuilder, type ResumeData } from "@/hooks/use-resume-builder"
 import { useAuth } from "@/contexts/auth-context"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, FileUp, Database, FileText, X, CheckCircle2, ChevronDown, Download, RefreshCw, Palette } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { extractTextFromFile } from "@/lib/file-parser"
-import { saveCoverLetter } from "@/lib/firestore"
+import { getResumes, saveCoverLetter } from "@/lib/firestore"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 
@@ -59,6 +59,12 @@ interface CoverLetterModalProps {
   children: React.ReactNode
 }
 
+type SavedResume = {
+  id: string
+  title?: string
+  data?: ResumeData
+}
+
 export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const { resumeData } = useResumeBuilder()
   const { user } = useAuth()
@@ -73,6 +79,9 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const [uploadedText, setUploadedText] = useState<string>("")
   const [isProcessingFile, setIsProcessingFile] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
+  const [loadingSaved, setLoadingSaved] = useState(false)
+  const [selectedSavedResumeId, setSelectedSavedResumeId] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Editor state
@@ -108,7 +117,44 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   
   const charCount = jobDescriptionInput.length
-  const isGenerateDisabled = charCount < 50 || isGenerating
+  const isGenerateDisabled = charCount < 50 || isGenerating || (resumeSource === "saved" && !selectedSavedResumeId)
+
+  useEffect(() => {
+    if (!open || !user) return
+
+    let isMounted = true
+
+    const fetchSavedResumes = async () => {
+      setLoadingSaved(true)
+      try {
+        const resumes = await getResumes(user.uid)
+        if (!isMounted) return
+        setSavedResumes(resumes)
+      } catch {
+        if (!isMounted) return
+        setSavedResumes([])
+      } finally {
+        if (!isMounted) return
+        setLoadingSaved(false)
+      }
+    }
+
+    void fetchSavedResumes()
+
+    return () => {
+      isMounted = false
+    }
+  }, [open, user])
+
+  useEffect(() => {
+    if (user) return
+    if (resumeSource !== "saved") return
+    const timeoutId = setTimeout(() => {
+      setResumeSource("current")
+      setSelectedSavedResumeId("")
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [user, resumeSource])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,17 +223,27 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     fileInputRef.current?.click()
   }
 
+  const handleSelectSavedResume = (resume: SavedResume) => {
+    const serialized = JSON.stringify(resume.data)
+    setSelectedSavedResumeId(resume.id)
+    setUploadedText(serialized ?? "")
+    setUploadedFile(null)
+    setFileError(null)
+    setResumeSource("saved")
+  }
+
   const handleGenerate = async () => {
     setIsGenerating(true)
     setError(null)
 
     try {
-      let resumeContent = resumeSource === "current" ? resumeData : uploadedText
+      const sourceForRequest = resumeSource === "saved" ? "upload" : resumeSource
+      const resumeContent = sourceForRequest === "current" ? resumeData : uploadedText
 
       const response = await fetch("/api/generate-cover-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription: jobDescriptionInput, resumeData: resumeContent, source: resumeSource }),
+        body: JSON.stringify({ jobDescription: jobDescriptionInput, resumeData: resumeContent, source: sourceForRequest }),
       })
 
       if (!response.ok) {
@@ -370,13 +426,66 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                       </Label>
                     </div>
 
-                    <Label htmlFor="saved" className="flex flex-col items-center justify-between rounded-xl border-2 border-border bg-card opacity-50 cursor-not-allowed p-4">
-                      <RadioGroupItem value="saved" id="saved" className="sr-only" disabled />
+                    <Label
+                      htmlFor="saved"
+                      className={cn(
+                        "flex flex-col items-center justify-between rounded-xl border-2 border-border bg-card p-4 transition-all",
+                        !user
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer hover:bg-accent",
+                        user && resumeSource === "saved" && "border-orange-600 bg-orange-500/10"
+                      )}
+                    >
+                      <RadioGroupItem value="saved" id="saved" className="sr-only" disabled={!user} />
                       <FileText className="mb-3 h-6 w-6 text-orange-600" />
                       <span className="text-sm font-medium">Select Saved CV</span>
-                      <span className="text-[10px] text-muted-foreground text-center">(Login required)</span>
+                      {!user ? (
+                        <span className="text-[10px] text-muted-foreground text-center">(Login required)</span>
+                      ) : loadingSaved ? (
+                        <span className="text-[10px] text-muted-foreground text-center flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Loading resumes...
+                        </span>
+                      ) : savedResumes.length === 0 ? (
+                        <span className="text-[10px] text-muted-foreground text-center">No saved resumes found</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground text-center">
+                          {savedResumes.length} resume{savedResumes.length === 1 ? "" : "s"} available
+                        </span>
+                      )}
                     </Label>
                   </RadioGroup>
+
+                  {user && resumeSource === "saved" && (
+                    <div className="rounded-lg border bg-background p-3">
+                      {loadingSaved ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Loading saved resumes...
+                        </div>
+                      ) : savedResumes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No saved resumes found</p>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {savedResumes.map((resume) => (
+                            <button
+                              key={resume.id}
+                              type="button"
+                              onClick={() => handleSelectSavedResume(resume)}
+                              className={cn(
+                                "w-full text-left px-3 py-2 rounded-md border text-sm transition-colors",
+                                selectedSavedResumeId === resume.id
+                                  ? "border-blue-600 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                                  : "border-border hover:bg-accent"
+                              )}
+                            >
+                              {resume.title || "Untitled Resume"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {uploadedFile && (
                     <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
