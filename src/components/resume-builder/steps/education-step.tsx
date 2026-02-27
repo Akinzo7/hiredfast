@@ -19,7 +19,8 @@ export function EducationStep({ data, updateData }: EducationStepProps) {
         school: "", 
         degree: "", 
         admissionYear: "",
-        graduationYear: ""
+        graduationYear: "",
+        description: "",
       }
     ])
   }
@@ -28,7 +29,11 @@ export function EducationStep({ data, updateData }: EducationStepProps) {
     updateData(data.filter(item => item.id !== id))
   }
 
-  const updateEducation = (id: string, field: string, value: any) => {
+  const updateEducation = (
+    id: string,
+    field: "school" | "degree" | "admissionYear" | "graduationYear" | "description",
+    value: string
+  ) => {
     updateData(data.map(item => item.id === id ? { ...item, [field]: value } : item))
   }
 

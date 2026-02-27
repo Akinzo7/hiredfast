@@ -1,17 +1,25 @@
-"use client"
+﻿"use client"
 
-import { useEffect, useRef, useState } from "react"
-import { useResumeBuilder, ResumeData } from "@/hooks/use-resume-builder"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, ZoomIn, ZoomOut, Type, Palette, ChevronDown, Loader2, Cloud, CheckCircle2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useEffect, useMemo, useRef, useState } from "react"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import { useDebounce } from "use-debounce"
-import { useAuth } from "@/contexts/auth-context"
-import { saveResume } from "@/lib/firestore"
-
+import {
+  AlignJustify,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Loader2,
+  Palette,
+  Type,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { ResumeData, useResumeBuilder } from "@/hooks/use-resume-builder"
+import { TEMPLATE_OPTIONS, renderLayout } from "./render-layout"
 import { TemplateSelectionModal } from "./template-selection-modal"
 
 type ScoreCategory = {
@@ -21,184 +29,268 @@ type ScoreCategory = {
   feedback: string[]
 }
 
+const FONT_OPTIONS = [
+  "Roboto",
+  "Merriweather",
+  "Montserrat",
+  "PT Sans",
+  "Raleway",
+  "IBM Plex Sans",
+  "Alegreya",
+  "Karla",
+  "Bitter",
+  "DM Sans",
+  "EB Garamond",
+] as const
+
+const FONT_FAMILY_MAP: Record<(typeof FONT_OPTIONS)[number], string> = {
+  Roboto: "'Roboto', sans-serif",
+  Merriweather: "'Merriweather', serif",
+  Montserrat: "'Montserrat', sans-serif",
+  "PT Sans": "'PT Sans', sans-serif",
+  Raleway: "'Raleway', sans-serif",
+  "IBM Plex Sans": "'IBM Plex Sans', sans-serif",
+  Alegreya: "'Alegreya', serif",
+  Karla: "'Karla', sans-serif",
+  Bitter: "'Bitter', serif",
+  "DM Sans": "'DM Sans', sans-serif",
+  "EB Garamond": "'EB Garamond', serif",
+}
+
+const lineSpacingOptions = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+const fontSizeOptions = Array.from({ length: 13 }, (_, index) => 8 + index * 0.5)
+
+const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+
 const serializeResumeToText = (data: ResumeData): string => {
-  const workExperienceText = data.workExperience
-    .map((exp) => [
-      `Role: ${exp.role} at ${exp.company}`,
-      `Period: ${exp.startDate} - ${exp.current ? "Present" : exp.endDate}`,
-      exp.achievements,
-    ].filter(Boolean).join("\n"))
-    .join("\n\n")
+  const workExperienceText = data.workExperienceRich
+    ? stripHtml(data.workExperienceRich)
+    : data.workExperience
+        .map((experience) =>
+          [
+            `${experience.role} at ${experience.company}`,
+            `${experience.startDate} - ${experience.current ? "Present" : experience.endDate}`,
+            stripHtml(experience.achievements),
+          ]
+            .filter(Boolean)
+            .join("\n")
+        )
+        .join("\n\n")
 
-  const educationText = data.education
-    .map((edu) => `${edu.school} - ${edu.degree} (${edu.graduationYear})`)
-    .join("\n")
+  const educationText = data.educationRich
+    ? stripHtml(data.educationRich)
+    : data.education
+        .map((education) =>
+          [
+            `${education.degree} - ${education.school}`,
+            `${education.admissionYear} - ${education.graduationYear}`,
+            stripHtml(education.description),
+          ]
+            .filter(Boolean)
+            .join("\n")
+        )
+        .join("\n\n")
 
-  const projectsText = data.projects
-    .map((project) => `${project.title}: ${project.description}`)
-    .join("\n")
-
-  const languagesText = data.languages
-    .map((lang) => `${lang.name} - ${lang.proficiency}`)
-    .join("\n")
-
-  const certificationsText = data.certifications
-    .map((cert) => `${cert.name} by ${cert.issuer} (${cert.year})`)
-    .join("\n")
-
-  const associationsText = data.associations
-    .map((assoc) => `${assoc.name} - ${assoc.role}`)
-    .join("\n")
-
-  const customSectionsText = data.customSections
-    .map((section) => `${section.title}: ${section.content}`)
-    .join("\n")
+  const skillsText = data.skillsRich || data.skills.technical || data.skills.soft
 
   return [
     "[PERSONAL INFO]",
     `Name: ${data.personalInfo.fullName}`,
+    `Functional Title: ${data.personalInfo.functionalTitle}`,
+    `Industry Title: ${data.personalInfo.industryTitle}`,
     `Email: ${data.personalInfo.email}`,
     `Phone: ${data.personalInfo.phone}`,
+    `Address: ${data.personalInfo.address}`,
     `LinkedIn: ${data.personalInfo.linkedin}`,
     `Portfolio: ${data.personalInfo.portfolio}`,
-    `Address: ${data.personalInfo.address}`,
     "",
     "[SUMMARY]",
-    data.summary,
+    stripHtml(data.summary),
     "",
-    "[WORK EXPERIENCE]",
+    "[CORE COMPETENCIES]",
+    stripHtml(data.coreCompetencies),
+    "",
+    "[PROFESSIONAL EXPERIENCE]",
     workExperienceText,
     "",
     "[EDUCATION]",
     educationText,
     "",
-    "[SKILLS]",
-    `Technical: ${data.skills.technical}`,
-    `Soft: ${data.skills.soft}`,
+    "[TECHNICAL SKILLS]",
+    stripHtml(skillsText),
+    "",
+    "[ACHIEVEMENTS]",
+    stripHtml(data.achievements),
     "",
     "[PROJECTS]",
-    projectsText,
+    data.projects.map((project) => `${project.title}: ${project.description}`).join("\n"),
     "",
     "[LANGUAGES]",
-    languagesText,
+    data.languages.map((language) => `${language.name} - ${language.proficiency}`).join("\n"),
     "",
     "[CERTIFICATIONS]",
-    certificationsText,
+    data.certifications.map((certification) => `${certification.name} - ${certification.issuer}`).join("\n"),
     "",
     "[ASSOCIATIONS]",
-    associationsText,
+    data.associations.map((association) => `${association.name} - ${association.role}`).join("\n"),
     "",
     "[CUSTOM SECTIONS]",
-    customSectionsText,
+    data.customSections.map((section) => `${section.title}: ${stripHtml(section.content)}`).join("\n"),
   ].join("\n")
+}
+
+const getScoreRingColor = (score: number | null) => {
+  if (score === null) return "#64748b"
+  if (score >= 80) return "#22c55e"
+  if (score >= 60) return "#eab308"
+  return "#ef4444"
+}
+
+const getScoreStatus = (score: number | null) => {
+  if (score === null) return { label: "Needs Data", className: "text-slate-400" }
+  if (score >= 80) return { label: "Ready to Apply", className: "text-green-500" }
+  if (score >= 60) return { label: "Almost There", className: "text-yellow-500" }
+  return { label: "Needs Work", className: "text-red-500" }
 }
 
 export function PreviewPanel() {
   const { resumeData } = useResumeBuilder()
-  const { user } = useAuth()
-  const [scale, setScale] = useState(
-    typeof window !== "undefined" && window.innerWidth < 768 ? 0.4 : 0.8
-  )
-  const [font, setFont] = useState("inter")
-  const [template, setTemplate] = useState("modern")
+
+  const [scale, setScale] = useState(typeof window !== "undefined" && window.innerWidth < 768 ? 0.4 : 0.8)
+  const [templateId, setTemplateId] = useState("modern")
   const [accentColor, setAccentColor] = useState("#2563eb")
+  const [lineSpacing, setLineSpacing] = useState(2.5)
+  const [fontSize, setFontSize] = useState(11.5)
+  const [font, setFont] = useState<(typeof FONT_OPTIONS)[number]>("Bitter")
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+  const [activeDropdown, setActiveDropdown] = useState<"lineSpacing" | "fontSize" | "font" | "">("")
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false)
+  const [showScorePanel, setShowScorePanel] = useState(false)
+  const [expandedCategoryName, setExpandedCategoryName] = useState("")
+  const [analysisRefreshToken, setAnalysisRefreshToken] = useState(0)
+
   const [aiScore, setAiScore] = useState<number | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [scoreCategories, setScoreCategories] = useState<ScoreCategory[]>([])
-  const [showCategories, setShowCategories] = useState(false)
-  const [showColorPicker, setShowColorPicker] = useState(false)
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false)
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
+
   const [debouncedResumeData] = useDebounce(resumeData, 3000)
+
   const resumeRef = useRef<HTMLDivElement | null>(null)
-  const colorInputRef = useRef<HTMLInputElement>(null)
-  const colorPickerRef = useRef<HTMLDivElement>(null)
+  const colorPickerRef = useRef<HTMLDivElement | null>(null)
+  const toolbarRef = useRef<HTMLDivElement | null>(null)
   const userAdjustedScale = useRef(false)
-  const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const currentTemplateName =
+    TEMPLATE_OPTIONS.find((template) => template.id === templateId)?.name ?? "Select Template"
 
   const handleDownload = async () => {
-    if (!resumeRef.current) return;
+    if (!resumeRef.current) return
+
     try {
-      const canvas = await html2canvas(resumeRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true })
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF("p", "mm", "a4")
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight)
+      heightLeft -= pdfHeight
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight)
+        heightLeft -= pdfHeight
       }
 
-      pdf.save('resume.pdf');
+      pdf.save("resume.pdf")
     } catch (error) {
-      console.error('PDF generation failed:', error);
-    }
-  }
-
-  // Mapping template ID to display name for the button
-  const getTemplateName = (id: string) => {
-    const names: Record<string, string> = {
-      modern: "Bold Template",
-      classic: "Professional",
-      minimal: "Clean",
-      spotlight: "Spotlight",
-      dynamic: "Dynamic",
-      horizon: "Horizon",
-      vibrant: "Vibrant",
-      tech: "Tech",
-      startup: "Startup",
-      creative: "Creative",
-      standard: "Standard",
-      corporate: "Corporate",
-      executive: "Executive",
-      simple: "Simple"
-    }
-    return names[id] || "Select Template"
-  }
-
-  const handleSave = async () => {
-    if (!user || saveState === "saving") return
-
-    if (saveStatusTimeoutRef.current) {
-      clearTimeout(saveStatusTimeoutRef.current)
-      saveStatusTimeoutRef.current = null
-    }
-
-    setSaveState("saving")
-    try {
-      const title = resumeData.personalInfo.fullName?.trim() || "Untitled Resume"
-      await saveResume(user.uid, title, resumeData)
-      setSaveState("saved")
-      saveStatusTimeoutRef.current = setTimeout(() => {
-        setSaveState("idle")
-        saveStatusTimeoutRef.current = null
-      }, 2000)
-    } catch (error) {
-      console.error("Failed to save resume:", error)
-      setSaveState("error")
-      saveStatusTimeoutRef.current = setTimeout(() => {
-        setSaveState("idle")
-        saveStatusTimeoutRef.current = null
-      }, 3000)
+      console.error("PDF generation failed:", error)
     }
   }
 
   useEffect(() => {
+    const fontsLinkId = "hiredfast-google-fonts"
+    if (document.getElementById(fontsLinkId)) return
+
+    const link = document.createElement("link")
+    link.id = fontsLinkId
+    link.rel = "stylesheet"
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=PT+Sans:wght@400;700&family=Raleway:wght@400;700&family=IBM+Plex+Sans:wght@400;700&family=Alegreya:wght@400;700&family=Karla:wght@400;700&family=Bitter:wght@400;700&family=DM+Sans:wght@400;700&family=EB+Garamond:wght@400;700&display=swap"
+
+    document.head.appendChild(link)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const savedPreferences = localStorage.getItem("hiredfast_resume_preferences")
+      if (savedPreferences) {
+        const parsed = JSON.parse(savedPreferences) as {
+          templateId?: string
+          template?: string
+          accentColor?: string
+          lineSpacing?: number
+          fontSize?: number
+          font?: (typeof FONT_OPTIONS)[number]
+        }
+
+        if (typeof parsed.templateId === "string") {
+          setTemplateId(parsed.templateId)
+        } else if (typeof parsed.template === "string") {
+          setTemplateId(parsed.template)
+        }
+
+        if (typeof parsed.accentColor === "string" && /^#[0-9A-Fa-f]{6}$/.test(parsed.accentColor)) {
+          setAccentColor(parsed.accentColor)
+        }
+
+        if (typeof parsed.lineSpacing === "number" && lineSpacingOptions.includes(parsed.lineSpacing)) {
+          setLineSpacing(parsed.lineSpacing)
+        }
+
+        if (typeof parsed.fontSize === "number" && fontSizeOptions.includes(parsed.fontSize)) {
+          setFontSize(parsed.fontSize)
+        }
+
+        if (typeof parsed.font === "string" && FONT_OPTIONS.includes(parsed.font as (typeof FONT_OPTIONS)[number])) {
+          setFont(parsed.font as (typeof FONT_OPTIONS)[number])
+        }
+      }
+    } catch {
+      // Ignore malformed preference payload
+    } finally {
+      setPreferencesLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!preferencesLoaded) return
+
+    try {
+      localStorage.setItem(
+        "hiredfast_resume_preferences",
+        JSON.stringify({ templateId, accentColor, lineSpacing, fontSize, font })
+      )
+    } catch {
+      // Ignore localStorage write failures
+    }
+  }, [templateId, accentColor, lineSpacing, fontSize, font, preferencesLoaded])
+
+  useEffect(() => {
     const controller = new AbortController()
-    const analyzeResume = async () => {
+
+    const runAnalysis = async () => {
       const resumeText = serializeResumeToText(debouncedResumeData)
       if (resumeText.length < 100) {
+        setAiScore(null)
+        setScoreCategories([])
         setIsAnalyzing(false)
         return
       }
@@ -212,11 +304,13 @@ export function PreviewPanel() {
           signal: controller.signal,
         })
 
-        if (!response.ok) throw new Error("Failed to analyze resume")
+        if (!response.ok) {
+          throw new Error("Failed to analyze resume")
+        }
 
-        const data: { totalScore: number; categories: ScoreCategory[] } = await response.json()
-        setAiScore(data.totalScore)
-        setScoreCategories(data.categories)
+        const result = (await response.json()) as { totalScore: number; categories: ScoreCategory[] }
+        setAiScore(result.totalScore)
+        setScoreCategories(result.categories)
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return
       } finally {
@@ -226,74 +320,28 @@ export function PreviewPanel() {
       }
     }
 
-    void analyzeResume()
+    void runAnalysis()
 
     return () => {
       controller.abort()
     }
-  }, [debouncedResumeData])
-
-  useEffect(() => {
-    try {
-      const savedPreferences = localStorage.getItem("hiredfast_resume_preferences")
-      if (savedPreferences) {
-        const preferences = JSON.parse(savedPreferences) as {
-          template?: string
-          font?: string
-          accentColor?: string
-        }
-
-        if (typeof preferences.template === "string") {
-          setTemplate(preferences.template)
-        }
-        if (typeof preferences.font === "string") {
-          setFont(preferences.font)
-        }
-        if (
-          typeof preferences.accentColor === "string" &&
-          /^#[0-9A-Fa-f]{6}$/.test(preferences.accentColor)
-        ) {
-          setAccentColor(preferences.accentColor)
-        }
-      }
-    } catch {
-      // Ignore malformed localStorage payloads
-    } finally {
-      setPreferencesLoaded(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!preferencesLoaded) return
-
-    try {
-      localStorage.setItem(
-        "hiredfast_resume_preferences",
-        JSON.stringify({ template, font, accentColor })
-      )
-    } catch {
-      // Ignore localStorage write failures
-    }
-  }, [template, font, accentColor, preferencesLoaded])
+  }, [debouncedResumeData, analysisRefreshToken])
 
   useEffect(() => {
     const onMouseDown = (event: MouseEvent) => {
-      if (
-        colorPickerRef.current &&
-        !colorPickerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node
+      if (toolbarRef.current && !toolbarRef.current.contains(target)) {
+        setActiveDropdown("")
+      }
+
+      if (colorPickerRef.current && !colorPickerRef.current.contains(target)) {
         setShowColorPicker(false)
       }
     }
 
-    if (showColorPicker) {
-      document.addEventListener("mousedown", onMouseDown)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown)
-    }
-  }, [showColorPicker])
+    document.addEventListener("mousedown", onMouseDown)
+    return () => document.removeEventListener("mousedown", onMouseDown)
+  }, [])
 
   useEffect(() => {
     const handleResize = () => {
@@ -309,868 +357,348 @@ export function PreviewPanel() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (saveStatusTimeoutRef.current) {
-        clearTimeout(saveStatusTimeoutRef.current)
-      }
-    }
-  }, [])
+  const scoreColor = getScoreRingColor(aiScore)
+  const scoreStatus = getScoreStatus(aiScore)
 
-  const scoreValue = aiScore ?? 0
-  const scoreBadgeClass = aiScore === null
-    ? "text-muted-foreground bg-muted"
-    : aiScore >= 80
-      ? "text-green-600 bg-green-500/15"
-      : aiScore >= 60
-        ? "text-yellow-600 bg-yellow-500/15"
-        : "text-red-600 bg-red-500/15"
-  const scoreBarClass = aiScore === null
-    ? "bg-muted-foreground/25"
-    : aiScore >= 80
-      ? "bg-green-500"
-      : aiScore >= 60
-        ? "bg-yellow-500"
-        : "bg-red-500"
-  const scoreMessage = isAnalyzing
-    ? "Analyzing your resume..."
-    : aiScore === null
-      ? "Fill in your resume to get your AI score"
+  const scorePillBorderClass =
+    aiScore === null
+      ? "border-slate-500"
       : aiScore >= 80
-        ? "Ready to apply!"
+        ? "border-green-500"
         : aiScore >= 60
-          ? "Good - a few improvements could help."
-          : "Add more details to improve your score."
+          ? "border-yellow-500"
+          : "border-red-500"
+
+  const toggleDropdown = (name: "lineSpacing" | "fontSize" | "font") => {
+    setActiveDropdown((current) => (current === name ? "" : name))
+  }
+
+  const progress = aiScore ?? 0
+  const circumference = 2 * Math.PI * 42
+  const strokeDashoffset = circumference - (progress / 100) * circumference
+
+  const resumeStyles = useMemo(
+    () => ({
+      width: "210mm",
+      transform: `scale(${scale})`,
+      fontFamily: FONT_FAMILY_MAP[font],
+      fontSize: `${fontSize}pt`,
+      lineHeight: lineSpacing,
+    }),
+    [scale, font, fontSize, lineSpacing]
+  )
 
   return (
-    <div className="flex flex-col h-full">
-      <TemplateSelectionModal 
-        open={isTemplateModalOpen} 
+    <div className="flex h-full flex-col">
+      <TemplateSelectionModal
+        open={isTemplateModalOpen}
         onOpenChange={setIsTemplateModalOpen}
-        selectedTemplateId={template}
-        onSelectTemplate={setTemplate}
+        selectedTemplateId={templateId}
+        onSelectTemplate={setTemplateId}
         accentColor={accentColor}
       />
 
-      {/* Toolbar */}
-      <div className="h-14 px-4 border-b bg-background flex items-center justify-between shrink-0 z-20">
-         <div className="flex items-center gap-3">
-             <Button 
-                variant="outline" 
-                onClick={() => setIsTemplateModalOpen(true)}
-                className="w-[180px] justify-between bg-muted border-border hover:bg-accent hover:border-border transition-all shadow-sm"
-             >
-                <span className="font-medium truncate mr-2">{getTemplateName(template)}</span>
-                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-             </Button>
-             
-             <div className="relative" ref={colorPickerRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowColorPicker((prev) => !prev)}
-                  className="h-9 w-9 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition-colors relative overflow-hidden border-2 border-slate-200"
-                  title="Accent Color"
-                  style={{ borderColor: accentColor }}
-                >
-                  <Palette className="h-4 w-4 text-slate-700" />
-                  <div
-                    className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full border border-white"
-                    style={{ backgroundColor: accentColor }}
-                  />
-                </button>
+      <div className="h-16 border-b bg-background px-4 shrink-0 flex items-center justify-between gap-3" ref={toolbarRef}>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="min-w-[190px] justify-between bg-muted border-border"
+            onClick={() => setIsTemplateModalOpen(true)}
+          >
+            <span className="truncate">{currentTemplateName}</span>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
 
-                <input
-                  ref={colorInputRef}
-                  type="color"
-                  value={accentColor}
-                  onChange={(event) => {
-                    setAccentColor(event.target.value)
-                    setShowColorPicker(false)
-                  }}
-                  className="sr-only"
-                />
+          <div className="relative" ref={colorPickerRef}>
+            <button
+              type="button"
+              onClick={() => setShowColorPicker((current) => !current)}
+              className="h-10 w-10 rounded-lg border border-border bg-muted inline-flex items-center justify-center"
+              aria-label="Accent color"
+            >
+              <Palette className="h-4 w-4" />
+            </button>
 
-                {showColorPicker && (
-                  <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-52">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                      Accent Color
-                    </p>
-                    <div className="grid grid-cols-4 gap-2 mb-3">
-                      {[
-                        "#2563eb",
-                        "#7c3aed",
-                        "#059669",
-                        "#dc2626",
-                        "#d97706",
-                        "#0891b2",
-                        "#db2777",
-                        "#1e293b",
-                      ].map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => {
-                            setAccentColor(color)
-                            setShowColorPicker(false)
-                          }}
-                          className="h-8 w-8 rounded-lg border-2 transition-all hover:scale-110"
-                          style={{
-                            backgroundColor: color,
-                            borderColor: accentColor === color ? "#000" : "transparent",
-                          }}
-                          title={color}
-                        />
-                      ))}
-                    </div>
+            {showColorPicker && (
+              <div className="absolute left-0 top-full z-40 mt-2 rounded-xl border border-border bg-popover p-3 shadow-xl">
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    "#2563eb",
+                    "#7c3aed",
+                    "#059669",
+                    "#dc2626",
+                    "#d97706",
+                    "#0891b2",
+                    "#db2777",
+                    "#1e293b",
+                  ].map((color) => (
                     <button
+                      key={color}
                       type="button"
-                      onClick={() => colorInputRef.current?.click()}
-                      className="w-full h-9 rounded-lg border-2 border-dashed border-slate-300 text-xs text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Palette className="h-3.5 w-3.5" />
-                      Custom color
-                    </button>
-                  </div>
-                )}
-             </div>
-         </div>
+                      onClick={() => {
+                        setAccentColor(color)
+                        setShowColorPicker(false)
+                      }}
+                      className="h-8 w-8 rounded border-2"
+                      style={{
+                        backgroundColor: color,
+                        borderColor: accentColor === color ? "#ffffff" : "transparent",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-         <div className="flex items-center gap-2">
-             <div className="flex items-center bg-muted rounded-lg p-1">
-                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                   userAdjustedScale.current = true
-                   setScale(s => Math.max(0.4, s - 0.1))
-                 }}>
-                     <ZoomOut className="h-3.5 w-3.5" />
-                 </Button>
-                 <span className="text-xs font-medium w-8 text-center">{Math.round(scale * 100)}%</span>
-                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                   userAdjustedScale.current = true
-                   setScale(s => Math.min(1.5, s + 0.1))
-                 }}>
-                     <ZoomIn className="h-3.5 w-3.5" />
-                 </Button>
-             </div>
-         </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => toggleDropdown("lineSpacing")}
+              className="h-10 rounded-lg border border-border bg-muted px-3 text-sm inline-flex items-center gap-2"
+            >
+              <AlignJustify className="h-4 w-4" />
+              <span>{lineSpacing}</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
 
-         <div className="flex items-center gap-3">
-             <Select value={font} onValueChange={setFont}>
-                 <SelectTrigger className="w-[110px] bg-muted border-none h-9">
-                     <Type className="h-3.5 w-3.5 mr-2 opacity-50" />
-                     <SelectValue placeholder="Font" />
-                 </SelectTrigger>
-                 <SelectContent>
-                     <SelectItem value="inter">Inter</SelectItem>
-                     <SelectItem value="bitter">Bitter</SelectItem>
-                     <SelectItem value="roboto">Roboto</SelectItem>
-                 </SelectContent>
-             </Select>
+            {activeDropdown === "lineSpacing" && (
+              <div className="absolute left-0 top-full mt-2 max-h-64 overflow-auto rounded-lg border border-border bg-popover p-1 shadow-xl z-40 min-w-[110px]">
+                {lineSpacingOptions.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setLineSpacing(value)
+                      setActiveDropdown("")
+                    }}
+                    className={cn(
+                      "w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted",
+                      lineSpacing === value && "bg-muted"
+                    )}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-             {user && (
-               <Button
-                 onClick={handleSave}
-                 disabled={saveState === "saving" || saveState === "error"}
-                 className={cn(
-                   "gap-2 h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white",
-                   saveState === "error" && "text-red-200 disabled:opacity-100"
-                 )}
-               >
-                 {saveState === "saving" ? (
-                   <>
-                     <Loader2 className="h-4 w-4 animate-spin" /> Saving…
-                   </>
-                 ) : saveState === "saved" ? (
-                   <>
-                     <CheckCircle2 className="h-4 w-4" /> Saved!
-                   </>
-                 ) : saveState === "error" ? (
-                   "Save failed"
-                 ) : (
-                   <>
-                     <Cloud className="h-4 w-4" /> Save
-                   </>
-                 )}
-               </Button>
-             )}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => toggleDropdown("fontSize")}
+              className="h-10 rounded-lg border border-border bg-muted px-3 text-sm inline-flex items-center gap-2"
+            >
+              <span className="font-semibold">Aa</span>
+              <span>{fontSize}</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
 
-             <Button className="gap-2 h-9 px-4" onClick={handleDownload}>
-                 <Download className="h-4 w-4" /> Download
-             </Button>
-         </div>
+            {activeDropdown === "fontSize" && (
+              <div className="absolute left-0 top-full mt-2 max-h-64 overflow-auto rounded-lg border border-border bg-popover p-1 shadow-xl z-40 min-w-[110px]">
+                {fontSizeOptions.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setFontSize(value)
+                      setActiveDropdown("")
+                    }}
+                    className={cn(
+                      "w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted",
+                      fontSize === value && "bg-muted"
+                    )}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => toggleDropdown("font")}
+              className="h-10 rounded-lg border border-border bg-muted px-3 text-sm inline-flex items-center gap-2"
+            >
+              <Type className="h-4 w-4" />
+              <span>{font}</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            {activeDropdown === "font" && (
+              <div className="absolute right-0 top-full mt-2 max-h-64 overflow-auto rounded-lg border border-border bg-popover p-1 shadow-xl z-40 min-w-[180px]">
+                {FONT_OPTIONS.map((fontName) => (
+                  <button
+                    key={fontName}
+                    type="button"
+                    onClick={() => {
+                      setFont(fontName)
+                      setActiveDropdown("")
+                    }}
+                    className={cn(
+                      "w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted",
+                      font === fontName && "bg-muted"
+                    )}
+                    style={{ fontFamily: FONT_FAMILY_MAP[fontName] }}
+                  >
+                    {fontName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Button className="h-10 gap-2" onClick={handleDownload}>
+            <Download className="h-4 w-4" /> Download
+          </Button>
+        </div>
       </div>
 
-      {/* Canvas Area */}
-      <div className="flex-1 overflow-auto bg-muted/50 relative flex items-start justify-center p-8 md:p-12">
-          
-          {/* Resume Score Floating Widget */}
-          <div className="absolute top-2 right-2 z-10 w-48 sm:w-64 sm:top-6 sm:right-6 bg-white rounded-xl shadow-lg border p-3 sm:p-4 animate-in fade-in slide-in-from-right-4">
-              <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                    Resume Score
-                    {isAnalyzing && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                  </h3>
-                  <div className={cn("text-xs font-bold px-2 py-0.5 rounded-full", scoreBadgeClass)}>
-                    {aiScore === null ? "—" : aiScore}/100
-                  </div>
-              </div>
-              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn(
-                        "absolute top-0 left-0 h-full transition-all duration-500 rounded-full",
-                        scoreBarClass,
-                        isAnalyzing && "opacity-70"
-                    )}
-                    style={{ width: `${scoreValue}%` }} 
-                  />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                  {scoreMessage}
-              </p>
-              {aiScore !== null && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowCategories((prev) => !prev)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    {showCategories ? "Hide" : "See details"}
-                  </button>
-                  {showCategories && (
-                    <div className="mt-2 space-y-2">
-                      {scoreCategories.map((category) => {
-                        const categoryPercent = category.maxScore > 0
-                          ? Math.min((category.score / category.maxScore) * 100, 100)
-                          : 0
-                        return (
-                          <div key={category.name}>
-                            <div className="flex items-center justify-between text-[11px] text-slate-600">
-                              <span className="truncate pr-2">{category.name}</span>
-                              <span>{category.score}/{category.maxScore}</span>
-                            </div>
-                            <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full",
-                                  categoryPercent >= 80 ? "bg-green-500" : categoryPercent >= 60 ? "bg-yellow-500" : "bg-red-500"
-                                )}
-                                style={{ width: `${categoryPercent}%` }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-          </div>
-
-          {/* Resume Page Container */}
-          <div 
-             ref={resumeRef}
-             className="bg-white shadow-2xl transition-transform origin-top duration-200 ease-out min-h-[297mm]"
-             style={{ 
-                 width: '210mm',
-                 transform: `scale(${scale})`,
-                 fontFamily: font === 'bitter' ? 'Georgia, serif' : font === 'roboto' ? 'Arial, sans-serif' : 'inherit'
-             }}
+      <div className="relative flex-1 overflow-auto bg-muted/50 p-8 md:p-12 flex items-start justify-center">
+        {!showScorePanel ? (
+          <button
+            type="button"
+            onClick={() => setShowScorePanel(true)}
+            className={cn(
+              "absolute top-6 right-6 z-20 rounded-xl border bg-background px-4 py-3 text-left shadow-lg flex items-center gap-3",
+              scorePillBorderClass
+            )}
           >
-             {renderLayout(template, resumeData, accentColor)}
+            <div>
+              <p className="text-sm font-semibold">Resume Score</p>
+              <p className="text-sm font-bold">
+                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : `${aiScore ?? 0}/100`}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="absolute top-6 right-6 z-20 w-80 rounded-xl border border-border bg-background p-4 shadow-xl">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowScorePanel(false)}
+                className="rounded-md p-1 hover:bg-muted"
+                aria-label="Collapse resume score"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <svg viewBox="0 0 100 100" className="h-28 w-28">
+                <circle cx="50" cy="50" r="42" stroke="#1f2937" strokeWidth="8" fill="none" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  stroke={scoreColor}
+                  strokeWidth="8"
+                  fill="none"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                />
+                <text x="50" y="54" textAnchor="middle" className="fill-current text-lg font-bold text-foreground">
+                  {isAnalyzing ? "..." : aiScore ?? 0}
+                </text>
+              </svg>
+              <p className={cn("text-sm font-semibold", scoreStatus.className)}>{scoreStatus.label}</p>
+
+              <button
+                type="button"
+                onClick={() => setAnalysisRefreshToken((current) => current + 1)}
+                disabled={isAnalyzing}
+                className="mt-3 rounded-md bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                ? Recalculate Score
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-sm font-semibold mb-2">Score Breakdown</p>
+              <div className="space-y-2">
+                {scoreCategories.map((category) => {
+                  const categoryProgress = category.maxScore
+                    ? Math.min(100, (category.score / category.maxScore) * 100)
+                    : 0
+                  const categoryColor =
+                    categoryProgress >= 80 ? "bg-green-500" : categoryProgress >= 60 ? "bg-yellow-500" : "bg-red-500"
+                  const isExpanded = expandedCategoryName === category.name
+
+                  return (
+                    <div key={category.name} className="rounded-lg border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCategoryName((current) => (current === category.name ? "" : category.name))}
+                        className="w-full p-2 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium w-28 truncate">{category.name}</span>
+                          <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full", categoryColor)} style={{ width: `${categoryProgress}%` }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground">{category.score}/{category.maxScore}</span>
+                          <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <ul className="px-4 pb-3 text-xs text-muted-foreground list-disc space-y-1">
+                          {category.feedback.map((item, index) => (
+                            <li key={`${category.name}-${index}`}>{item}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
+        )}
+
+        <div ref={resumeRef} className="bg-white shadow-2xl origin-top transition-transform duration-200" style={resumeStyles}>
+          {renderLayout(templateId, resumeData, accentColor)}
+        </div>
+
+        <div className="absolute bottom-8 right-8 z-20 flex items-center rounded-full border border-border bg-background px-2 py-2 shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              userAdjustedScale.current = true
+              setScale((current) => Math.max(0.4, current - 0.1))
+            }}
+            className="h-10 w-10 rounded-full inline-flex items-center justify-center hover:bg-muted"
+            aria-label="Zoom out"
+          >
+            <ZoomOut className="h-5 w-5" />
+          </button>
+          <div className="px-2 text-xs font-semibold text-muted-foreground min-w-12 text-center">
+            {Math.round(scale * 100)}%
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              userAdjustedScale.current = true
+              setScale((current) => Math.min(1.5, current + 0.1))
+            }}
+            className="h-10 w-10 rounded-full inline-flex items-center justify-center hover:bg-muted"
+            aria-label="Zoom in"
+          >
+            <ZoomIn className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-const formatDate = (dateString: string) => {
-    if (!dateString) return ""
-    if (dateString === "Present") return "Present"
-    // Check if it matches YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        try {
-            const date = new Date(dateString)
-            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        } catch {
-            return dateString
-        }
-    }
-    return dateString
-}
-
-function renderLayout(templateId: string, data: ResumeData, accentColor: string = "#2563eb") {
-    // 1. Sidebar Layouts (Modern, Spotlight, Tech)
-    if (['modern', 'spotlight', 'tech', 'startup', 'dynamic'].includes(templateId)) {
-        return (
-            <div className="flex h-full min-h-[297mm]">
-                {/* Left Sidebar */}
-                <div
-                    className={cn(
-                        "w-[35%] p-8 text-white space-y-8",
-                        templateId === 'tech' && "font-mono"
-                    )}
-                    style={{ backgroundColor: accentColor }}
-                >
-                    {/* Photo area could go here */}
-                    
-                    {/* Contact */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Contact</h3>
-                        <div className="text-sm space-y-2 opacity-90">
-                            <div className="break-words">{data.personalInfo.email}</div>
-                            <div>{data.personalInfo.phone}</div>
-                            <div>{data.personalInfo.address}</div>
-                            {data.personalInfo.portfolio && <div className="break-words text-xs underline">{data.personalInfo.portfolio}</div>}
-                            <div className="break-words text-xs">{data.personalInfo.linkedin}</div>
-                        </div>
-                    </div>
-
-                    {/* Skills */}
-                    {(data.skills.technical || data.skills.soft) && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Skills</h3>
-                            <div className="text-sm opacity-90 space-y-3">
-                                {data.skills.technical && <div><span className="font-semibold block mb-1">Technical:</span>{data.skills.technical}</div>}
-                                {data.skills.soft && <div><span className="font-semibold block mb-1">Soft:</span>{data.skills.soft}</div>}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Languages */}
-                    {(data.languages.length > 0) && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Languages</h3>
-                            <div className="text-sm opacity-90 space-y-1">
-                                {data.languages.map((lang, i) => (
-                                    <div key={i} className="flex justify-between">
-                                        <span>{lang.name}</span>
-                                        <span className="opacity-75">{lang.proficiency}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Certifications - Sidebar style */}
-                     {(data.certifications.length > 0) && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Certifications</h3>
-                            <div className="text-sm opacity-90 space-y-2">
-                                {data.certifications.map((cert, i) => (
-                                    <div key={i}>
-                                        <div className="font-semibold">{cert.name}</div>
-                                        <div className="text-xs opacity-75">{cert.issuer} ({cert.year})</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Associations */}
-                    {(data.associations.length > 0) && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Associations</h3>
-                            <div className="text-sm opacity-90 space-y-2">
-                                {data.associations.map((assoc, i) => (
-                                    <div key={i}>
-                                        <div className="font-semibold">{assoc.name}</div>
-                                        <div className="text-xs opacity-75">{assoc.role}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Education (Sidebar style) */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-2">Education</h3>
-                        <div className="space-y-4">
-                            {data.education.map((edu, i) => (
-                                <div key={i} className="text-sm">
-                                    <div className="font-bold">{edu.school}</div>
-                                    <div className="opacity-80">{edu.degree}</div>
-                                    <div className="opacity-60 text-xs">{edu.graduationYear}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="flex-1 p-8 space-y-8 bg-white text-slate-800">
-                    <header className="space-y-2 mb-8">
-                        <h1
-                            className="text-4xl font-extrabold uppercase tracking-tight"
-                            style={{ color: accentColor }}
-                        >
-                            {data.personalInfo.fullName}
-                        </h1>
-                        <p className="text-xl font-medium text-slate-500">{data.workExperience[0]?.role}</p>
-                    </header>
-
-                    {/* Summary */}
-                    {data.summary && (
-                        <div className="text-sm leading-relaxed mb-8 opacity-90 whitespace-pre-wrap">
-                            {data.summary}
-                        </div>
-                    )}
-
-                    <section>
-                         <h3
-                             className="text-sm font-bold uppercase tracking-widest border-b-2 pb-2 mb-4"
-                             style={{ borderColor: accentColor, color: accentColor }}
-                         >
-                            Professional Experience
-                        </h3>
-                         <div className="space-y-6">
-                            {data.workExperience.map((exp, i) => (
-                                <div key={i} className="relative pl-4 border-l-2 border-slate-100">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h4 className="font-bold text-lg">{exp.role}</h4>
-                                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded">{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
-                                    </div>
-                                    <div className="text-sm font-medium text-slate-600 mb-2">{exp.company}</div>
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{exp.achievements}</p>
-                                </div>
-                            ))}
-                         </div>
-                    </section>
-
-                    {/* Projects */}
-                    {(data.projects.length > 0) && (
-                    <section>
-                         <h3
-                             className="text-sm font-bold uppercase tracking-widest border-b-2 pb-2 mb-4"
-                             style={{ borderColor: accentColor, color: accentColor }}
-                         >
-                            Projects
-                        </h3>
-                         <div className="space-y-6">
-                            {data.projects.map((project, i) => (
-                                <div key={i} className="relative pl-4 border-l-2 border-slate-100">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h4 className="font-bold text-lg">{project.title}</h4>
-                                        {project.link && <a href={project.link} target="_blank" className="text-xs font-semibold text-blue-600 hover:underline">{project.link.replace(/^https?:\/\//, '')}</a>}
-                                    </div>
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
-                                </div>
-                            ))}
-                         </div>
-                    </section>
-                    )}
-
-                    {/* Custom Sections */}
-                    {data.customSections.map((section) => (
-                        <section key={section.id}>
-                             <h3
-                                 className="text-sm font-bold uppercase tracking-widest border-b-2 pb-2 mb-4"
-                                 style={{ borderColor: accentColor, color: accentColor }}
-                             >
-                                {section.title}
-                            </h3>
-                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{section.content}</p>
-                        </section>
-                    ))}
-                </div>
-            </div>
-        )
-    }
-
-    // 2. Classic/Professional Layouts (Standard, Corporate, Executive)
-    if (['classic', 'corporate', 'executive', 'standard', 'academic'].includes(templateId)) {
-        return (
-            <div className="p-12 h-full text-slate-900">
-                <header className="text-center border-b-2 pb-8 mb-8" style={{ borderColor: accentColor }}>
-                    <h1 className="text-3xl font-serif font-bold tracking-wide mb-2">{data.personalInfo.fullName.toUpperCase()}</h1>
-                    <div className="flex justify-center flex-wrap gap-4 text-sm font-medium text-slate-600">
-                         <span>{data.personalInfo.address}</span>
-                         <span className="text-slate-300">•</span>
-                         <span>{data.personalInfo.email}</span>
-                         <span className="text-slate-300">•</span>
-                         <span>{data.personalInfo.phone}</span>
-                         {data.personalInfo.portfolio && (
-                            <>
-                                <span className="text-slate-300">•</span>
-                                <span>{data.personalInfo.portfolio}</span>
-                            </>
-                         )}
-                         {data.personalInfo.linkedin && (
-                            <>
-                                <span className="text-slate-300">•</span>
-                                <span>{data.personalInfo.linkedin}</span>
-                            </>
-                         )}
-                    </div>
-                </header>
-
-                <div className="space-y-6">
-                    {data.summary && (
-                         <div className="text-sm leading-relaxed mb-6 whitespace-pre-wrap">
-                            {data.summary}
-                         </div>
-                    )}
-
-                    <section>
-                         <h3
-                            className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                            style={{ borderColor: accentColor }}
-                         >
-                            Experience
-                        </h3>
-                         <div className="space-y-5">
-                            {data.workExperience.map((exp, i) => (
-                                <div key={i} className="text-sm">
-                                    <div className="flex justify-between font-bold text-base">
-                                        <span>{exp.company}</span>
-                                        <span>{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
-                                    </div>
-                                    <div className="italic text-sm mb-2">{exp.role}</div>
-                                    <ul className="list-disc list-outside ml-4 text-sm space-y-1">
-                                        {exp.achievements.split('\n').map((line, k) => (
-                                            <li key={k}>{line.replace(/^•\s*/, '')}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                         </div>
-                    </section>
-
-                    <section>
-                         <h3
-                            className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                            style={{ borderColor: accentColor }}
-                         >
-                            Projects
-                        </h3>
-                         <div className="space-y-4">
-                            {data.projects.map((project, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between font-bold text-base">
-                                        <span>{project.title}</span>
-                                        {project.link && <a href={project.link} className="text-xs text-blue-600 font-normal">{project.link.replace(/^https?:\/\//, '')}</a>}
-                                    </div>
-                                    <p className="text-sm mt-1">{project.description}</p>
-                                </div>
-                            ))}
-                         </div>
-                    </section>
-
-                    <section>
-                         <h3
-                            className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                            style={{ borderColor: accentColor }}
-                         >
-                            Education
-                        </h3>
-                         <div className="space-y-3">
-                            {data.education.map((edu, i) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                    <div>
-                                        <div className="font-bold">{edu.school}</div>
-                                        <div>{edu.degree}</div>
-                                    </div>
-                                    <div className="font-bold">{edu.graduationYear}</div>
-                                </div>
-                            ))}
-                         </div>
-                    </section>
-
-                    {(data.certifications.length > 0 || data.languages.length > 0 || data.associations.length > 0) && (
-                        <section className="grid grid-cols-2 gap-8">
-                             {data.certifications.length > 0 && (
-                                 <div>
-                                    <h3
-                                        className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                                        style={{ borderColor: accentColor }}
-                                    >
-                                        Certifications
-                                    </h3>
-                                    <ul className="text-sm space-y-1">
-                                        {data.certifications.map((cert, i) => (
-                                            <li key={i}>{cert.name} - <span className="text-slate-500">{cert.year}</span></li>
-                                        ))}
-                                    </ul>
-                                 </div>
-                             )}
-                             {data.languages.length > 0 && (
-                                 <div>
-                                    <h3
-                                        className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                                        style={{ borderColor: accentColor }}
-                                    >
-                                        Languages
-                                    </h3>
-                                    <ul className="text-sm space-y-1">
-                                        {data.languages.map((lang, i) => (
-                                            <li key={i}>{lang.name} - <span className="text-slate-500">{lang.proficiency}</span></li>
-                                        ))}
-                                    </ul>
-                                 </div>
-                             )}
-                             {data.associations.length > 0 && (
-                                 <div>
-                                    <h3
-                                        className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                                        style={{ borderColor: accentColor }}
-                                    >
-                                        Associations
-                                    </h3>
-                                    <ul className="text-sm space-y-1">
-                                        {data.associations.map((assoc, i) => (
-                                            <li key={i}>{assoc.name} - <span className="text-slate-500">{assoc.role}</span></li>
-                                        ))}
-                                    </ul>
-                                 </div>
-                             )}
-                        </section>
-                    )}
-
-                    {/* Custom Sections */}
-                    {data.customSections.map((section) => (
-                        <section key={section.id}>
-                             <h3
-                                className="text-sm font-bold uppercase tracking-widest bg-slate-100 p-1 pl-2 mb-4 border-l-4"
-                                style={{ borderColor: accentColor }}
-                             >
-                                {section.title}
-                            </h3>
-                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{section.content}</p>
-                        </section>
-                    ))}
-                </div>
-            </div>
-        )
-    }
-
-    // 3. Creative/Header Layout (Horizon, Vibrant)
-    if (['horizon', 'vibrant', 'creative'].includes(templateId)) {
-        return (
-             <div className="h-full bg-white">
-                 <header
-                    className="p-12 flex justify-between items-center text-white"
-                    style={{ backgroundColor: accentColor }}
-                 >
-                      <div>
-                          <h1 className="text-5xl font-black tracking-tighter mb-2">{data.personalInfo.fullName}</h1>
-                          <p className="text-xl opacity-90">{data.workExperience[0]?.role}</p>
-                      </div>
-                      <div className="text-right text-sm space-y-1 opacity-90 font-medium">
-                          <div>{data.personalInfo.email}</div>
-                          <div>{data.personalInfo.phone}</div>
-                          {data.personalInfo.portfolio && <div>{data.personalInfo.portfolio}</div>}
-                          <div>{data.personalInfo.linkedin}</div>
-                      </div>
-                 </header>
-
-                  <div className="p-12 grid grid-cols-3 gap-12">
-                      <div className="col-span-2 space-y-8">
-                          {data.summary && (
-                             <section>
-                                 <h3 className="text-xl font-bold mb-4" style={{ color: accentColor }}>Profile</h3>
-                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{data.summary}</p>
-                             </section>
-                          )}
-
-                          <section>
-                              <h3 className="text-xl font-bold mb-4" style={{ color: accentColor }}>Experience</h3>
-                              <div className="space-y-8">
-                                  {data.workExperience.map((exp, i) => (
-                                      <div key={i}>
-                                          <h4 className="text-lg font-bold">{exp.role}</h4>
-                                          <div className="text-sm text-slate-500 mb-2">{exp.company} | {formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</div>
-                                          <p className="text-sm leading-relaxed">{exp.achievements}</p>
-                                      </div>
-                                  ))}
-                              </div>
-                          </section>
-
-                          {data.projects.length > 0 && (
-                            <section>
-                                <h3 className="text-xl font-bold mb-4" style={{ color: accentColor }}>Projects</h3>
-                                <div className="space-y-6">
-                                    {data.projects.map((project, i) => (
-                                        <div key={i}>
-                                            <div className="flex justify-between items-baseline mb-1">
-                                                <h4 className="font-bold text-lg">{project.title}</h4>
-                                                {project.link && <span className="text-xs text-slate-400">{project.link.replace(/^https?:\/\//, '')}</span>}
-                                            </div>
-                                            <p className="text-sm leading-relaxed">{project.description}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                          )}
-
-                          {data.customSections.map((section) => (
-                             <section key={section.id}>
-                                 <h3 className="text-xl font-bold mb-4" style={{ color: accentColor }}>{section.title}</h3>
-                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{section.content}</p>
-                             </section>
-                          ))}
-                      </div>
-
-                      <div className="col-span-1 space-y-8">
-                          <section className="bg-slate-50 p-6 rounded-xl">
-                              <h3 className="font-bold mb-4" style={{ color: accentColor }}>Education</h3>
-                              {data.education.map((edu, i) => (
-                                  <div key={i} className="mb-4 last:mb-0">
-                                      <div className="font-bold text-sm">{edu.school}</div>
-                                      <div className="text-xs text-slate-500">{edu.degree}</div>
-                                      <div className="text-xs text-slate-400">{edu.graduationYear}</div>
-                                  </div>
-                              ))}
-                          </section>
-
-                          {data.languages.length > 0 && (
-                             <section className="bg-slate-50 p-6 rounded-xl">
-                                <h3 className="font-bold mb-4" style={{ color: accentColor }}>Languages</h3>
-                                {data.languages.map((lang, i) => (
-                                    <div key={i} className="flex justify-between text-sm mb-2">
-                                        <span>{lang.name}</span>
-                                        <span className="text-slate-500">{lang.proficiency}</span>
-                                    </div>
-                                ))}
-                             </section>
-                          )}
-
-                          {data.certifications.length > 0 && (
-                             <section className="bg-slate-50 p-6 rounded-xl">
-                                <h3 className="font-bold mb-4" style={{ color: accentColor }}>Certifications</h3>
-                                {data.certifications.map((cert, i) => (
-                                    <div key={i} className="mb-2 last:mb-0">
-                                        <div className="font-semibold text-sm">{cert.name}</div>
-                                        <div className="text-xs text-slate-500">{cert.issuer}, {cert.year}</div>
-                                    </div>
-                                ))}
-                             </section>
-                          )}
-
-                          {data.associations.length > 0 && (
-                             <section className="bg-slate-50 p-6 rounded-xl">
-                                <h3 className="font-bold mb-4" style={{ color: accentColor }}>Associations</h3>
-                                {data.associations.map((assoc, i) => (
-                                    <div key={i} className="mb-2 last:mb-0">
-                                        <div className="font-semibold text-sm">{assoc.name}</div>
-                                        <div className="text-xs text-slate-500">{assoc.role}</div>
-                                    </div>
-                                ))}
-                             </section>
-                          )}
-                      </div>
-                 </div>
-             </div>
-        )
-    }
-
-    // Default / Minimal Layout (Minimal, Clean, Air, Focus, Simple, etc)
-    return (
-        <div className="p-12 h-full text-slate-800">
-             <header className="mb-12">
-                 <h1 className="text-4xl font-light tracking-tight mb-2">{data.personalInfo.fullName}</h1>
-                 <div className="flex gap-4 text-sm text-slate-500 flex-wrap">
-                      <span>{data.personalInfo.email}</span>
-                      <span>{data.personalInfo.phone}</span>
-                      <span>{data.personalInfo.address}</span>
-                      {data.personalInfo.portfolio && <span>{data.personalInfo.portfolio}</span>}
-                 </div>
-                 {data.summary && (
-                     <p className="mt-8 text-sm leading-relaxed text-slate-600 max-w-4xl whitespace-pre-wrap">
-                        {data.summary}
-                     </p>
-                 )}
-             </header>
-
-             <div className="grid grid-cols-12 gap-8">
-                 <div className="col-span-3 space-y-8 text-sm">
-                      <div className="space-y-4">
-                           <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Education</h3>
-                           {data.education.map((edu, i) => (
-                                <div key={i}>
-                                    <div className="font-semibold">{edu.school}</div>
-                                    <div className="text-slate-500">{edu.degree}</div>
-                                    <div className="text-slate-400 text-xs">{edu.graduationYear}</div>
-                                </div>
-                           ))}
-                      </div>
-                      <div className="space-y-4">
-                            <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Skills</h3>
-                           <p className="leading-relaxed">{data.skills.technical}</p>
-                      </div>
-
-                      {data.languages.length > 0 && (
-                          <div className="space-y-4">
-                               <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Languages</h3>
-                               {data.languages.map((lang, i) => (
-                                   <div key={i}>
-                                       <span className="font-semibold">{lang.name}</span>
-                                       <span className="text-slate-500 text-xs ml-2">{lang.proficiency}</span>
-                                   </div>
-                               ))}
-                          </div>
-                      )}
-
-                      {data.certifications.length > 0 && (
-                          <div className="space-y-4">
-                               <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Certifications</h3>
-                               {data.certifications.map((cert, i) => (
-                                   <div key={i} className="mb-2">
-                                       <div className="font-semibold">{cert.name}</div>
-                                       <div className="text-slate-500 text-xs">{cert.year}</div>
-                                   </div>
-                               ))}
-                          </div>
-                      )}
-
-                      {data.associations.length > 0 && (
-                          <div className="space-y-4">
-                               <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Associations</h3>
-                               {data.associations.map((assoc, i) => (
-                                   <div key={i} className="mb-2">
-                                       <div className="font-semibold">{assoc.name}</div>
-                                       <div className="text-slate-500 text-xs">{assoc.role}</div>
-                                   </div>
-                               ))}
-                          </div>
-                      )}
-                 </div>
-
-                 <div className="col-span-9 space-y-8">
-                      <div className="space-y-6">
-                           <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Experience</h3>
-                           {data.workExperience.map((exp, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between items-baseline">
-                                        <h4 className="font-bold text-base">{exp.role} at {exp.company}</h4>
-                                        <span className="text-xs text-slate-400 font-mono">{formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}</span>
-                                    </div>
-                                    <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">{exp.achievements}</p>
-                                </div>
-                            ))}
-                      </div>
-
-                      {data.projects.length > 0 && (
-                          <div className="space-y-6">
-                               <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>Projects</h3>
-                               {data.projects.map((project, i) => (
-                                    <div key={i}>
-                                        <div className="flex justify-between items-baseline">
-                                            <h4 className="font-bold text-base">{project.title}</h4>
-                                            {project.link && <span className="text-xs text-blue-600">{project.link.replace(/^https?:\/\//, '')}</span>}
-                                        </div>
-                                        <p className="mt-1 text-sm leading-relaxed text-slate-600">{project.description}</p>
-                                    </div>
-                                ))}
-                          </div>
-                      )}
-
-                      {/* Custom Sections */}
-                      {data.customSections.map((section) => (
-                          <div key={section.id} className="space-y-6">
-                               <h3 className="font-bold uppercase tracking-wider text-xs border-b pb-1" style={{ borderColor: accentColor }}>{section.title}</h3>
-                               <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">{section.content}</p>
-                          </div>
-                      ))}
-                 </div>
-             </div>
-        </div>
-    )
-}

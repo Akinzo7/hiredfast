@@ -15,7 +15,7 @@ export function ProjectsStep({ data, updateData }: ProjectsStepProps) {
   const addProject = () => {
     updateData([
       ...data, 
-      { id: crypto.randomUUID(), title: "", description: "", link: "" }
+      { id: crypto.randomUUID(), title: "", description: "", link: "", startDate: "", endDate: "" }
     ])
   }
 
@@ -23,7 +23,11 @@ export function ProjectsStep({ data, updateData }: ProjectsStepProps) {
     updateData(data.filter(item => item.id !== id))
   }
 
-  const updateProject = (id: string, field: string, value: any) => {
+  const updateProject = (
+    id: string,
+    field: "title" | "description" | "link" | "startDate" | "endDate",
+    value: string
+  ) => {
     updateData(data.map(item => item.id === id ? { ...item, [field]: value } : item))
   }
 
@@ -69,6 +73,25 @@ export function ProjectsStep({ data, updateData }: ProjectsStepProps) {
                   onChange={(e) => updateProject(item.id, 'link', e.target.value)}
                   placeholder="e.g. github.com/username/project"
                 />
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={item.startDate}
+                    onChange={(e) => updateProject(item.id, 'startDate', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input
+                    type="date"
+                    value={item.endDate}
+                    onChange={(e) => updateProject(item.id, 'endDate', e.target.value)}
+                  />
+                </div>
              </div>
 
              <div className="space-y-2">

@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey && apiKey.trim() ? new GoogleGenerativeAI(apiKey) : null;
+import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini";
 
 export async function POST(req: Request) {
   if (!genAI) {
@@ -13,13 +10,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { jobDescription, resumeData, source } = await req.json();
+    const { jobDescription, resumeData } = await req.json();
 
     if (!jobDescription || jobDescription.length < 50) {
       return NextResponse.json({ error: "Job description is too short." }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_FLASH });
 
     const resumeContext = resumeData 
       ? JSON.stringify(resumeData) 

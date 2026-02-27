@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini";
 
 export async function POST(req: Request) {
   if (!genAI) {
@@ -15,7 +12,7 @@ export async function POST(req: Request) {
   try {
     const { conversationHistory, userAnswer, resumeData, jobDescription, questionNumber } = await req.json();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_FLASH });
 
     const resumeContext = typeof resumeData === 'string' ? resumeData : JSON.stringify(resumeData);
 

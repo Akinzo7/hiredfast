@@ -10,7 +10,7 @@ interface SkillsStepProps {
 export function SkillsStep({ data, updateData }: SkillsStepProps) {
   return (
     <div className="space-y-6">
-       <h2 className="text-lg font-semibold">Skills</h2>
+       <h2 className="text-lg font-semibold">Technical Skills</h2>
 
        <div className="space-y-4">
           <div className="space-y-2">
@@ -20,17 +20,6 @@ export function SkillsStep({ data, updateData }: SkillsStepProps) {
               value={data.technical}
               onChange={(e) => updateData({ technical: e.target.value })}
               placeholder="e.g. React, TypeScript, Next.js, Node.js, Python, Figma..."
-              className="min-h-[120px]"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-base">Soft Skills</Label>
-            <p className="text-sm text-muted-foreground">List your interpersonal skills and leadership abilities.</p>
-            <Textarea 
-              value={data.soft}
-              onChange={(e) => updateData({ soft: e.target.value })}
-              placeholder="e.g. Leadership, Communication, Problem Solving, Team Management..."
               className="min-h-[120px]"
             />
           </div>

@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
 import { NextResponse } from "next/server"
-
-const apiKey = process.env.GEMINI_API_KEY
-const genAI = apiKey && apiKey.trim() ? new GoogleGenerativeAI(apiKey) : null
+import { GEMINI_MODEL_PRO, genAI } from "@/lib/gemini"
 
 export async function POST(req: Request) {
   if (!genAI) {
@@ -22,7 +19,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_PRO })
 
     const prompt = `
 You are an expert resume analyst and career coach with years of experience 
