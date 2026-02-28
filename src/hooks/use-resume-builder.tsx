@@ -88,6 +88,8 @@ interface ResumeBuilderContextType {
   totalSteps: number
   resumeData: ResumeData
   isLoaded: boolean
+  hiddenSections: string[]
+  setHiddenSections: (sections: string[]) => void
   nextStep: () => void
   prevStep: () => void
   goToStep: (step: number) => void
@@ -128,9 +130,19 @@ const mergeResumeData = (value: unknown): ResumeData => {
   const parsedAssociations = Array.isArray(parsed.associations) ? parsed.associations : []
   const parsedCustomSections = Array.isArray(parsed.customSections) ? parsed.customSections : []
 
-  const legacySoftSkills = asString(parsedSkills.soft)
-  const baseTechnicalSkills = asString(parsedSkills.technical)
-  const technicalSkills = [baseTechnicalSkills, legacySoftSkills].filter(Boolean).join(baseTechnicalSkills && legacySoftSkills ? "\n" : "")
+  const skillsRichValue = asString(parsed.skillsRich)
+
+  const technicalSkills = (() => {
+    const hasSkilsRich = skillsRichValue.trim().length > 0
+    if (hasSkilsRich) {
+      return asString(parsedSkills.technical)
+    }
+    const baseTechnicalSkills = asString(parsedSkills.technical)
+    const legacySoftSkills = asString(parsedSkills.soft)
+    return [baseTechnicalSkills, legacySoftSkills]
+      .filter(Boolean)
+      .join(baseTechnicalSkills && legacySoftSkills ? "\n" : "")
+  })()
 
   return {
     personalInfo: {
@@ -149,7 +161,7 @@ const mergeResumeData = (value: unknown): ResumeData => {
     achievements: asString(parsed.achievements),
     workExperienceRich: asString(parsed.workExperienceRich),
     educationRich: asString(parsed.educationRich),
-    skillsRich: asString(parsed.skillsRich),
+    skillsRich: skillsRichValue,
     workExperience: parsedWorkExperience.map((item) => {
       const workItem = (item as Record<string, unknown>) ?? {}
       return {
@@ -228,6 +240,7 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [hiddenSections, setHiddenSectionsState] = useState<string[]>([])
 
   const [, setSaveError] = useState<string | null>(null)
 
@@ -243,6 +256,14 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
       if (savedData) {
         const parsed = JSON.parse(savedData)
         setResumeData(mergeResumeData(parsed))
+      }
+
+      const savedHiddenSections = localStorage.getItem("hiredfast_hidden_sections")
+      if (savedHiddenSections) {
+        const parsed = JSON.parse(savedHiddenSections)
+        if (Array.isArray(parsed)) {
+          setHiddenSectionsState(parsed.filter((id): id is string => typeof id === "string"))
+        }
       }
     } catch (error) {
       console.warn("LocalStorage access denied or unavailable. Running in in-memory mode.", error)
@@ -269,6 +290,20 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [resumeData, isLoaded])
+
+  // Persist hiddenSections to localStorage
+  useEffect(() => {
+    if (!isLoaded) return
+    try {
+      localStorage.setItem("hiredfast_hidden_sections", JSON.stringify(hiddenSections))
+    } catch {
+      // ignore
+    }
+  }, [hiddenSections, isLoaded])
+
+  const setHiddenSections = (sections: string[]) => {
+    setHiddenSectionsState(sections)
+  }
 
   const updatePersonalInfo = (data: Partial<ResumeData["personalInfo"]>) => {
     setResumeData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, ...data } }))
@@ -340,6 +375,8 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
     totalSteps,
     resumeData,
     isLoaded,
+    hiddenSections,
+    setHiddenSections,
     nextStep,
     prevStep,
     goToStep,

@@ -83,6 +83,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   const [loadingSaved, setLoadingSaved] = useState(false)
   const [selectedSavedResumeId, setSelectedSavedResumeId] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isProcessingFileRef = useRef(false) // synchronous mutex for file processing
   
   // Editor state
   const [isLetterGenerated, setIsLetterGenerated] = useState(false)
@@ -158,42 +159,54 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
     if (!file) return;
-    
-    // Prevent concurrent processing
-    if (isProcessingFile) {
+
+    // Synchronous mutex check — ref reads are always current unlike React state,
+    // so two rapid calls cannot both pass this guard before either sets the flag.
+    if (isProcessingFileRef.current) {
       setFileError("Please wait, currently processing a file.");
       return;
     }
 
-    // Validate File Type
-    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    // Acquire the mutex synchronously before any await
+    isProcessingFileRef.current = true
+
+    // Validate file type
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
     const validExtensions = ['.pdf', '.docx'];
-    const isValidType = validTypes.includes(file.type) || validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    const isValidType =
+      validTypes.includes(file.type) ||
+      validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
 
     if (!isValidType) {
-        setFileError("Invalid file type. Please upload PDF or DOCX.");
-        setResumeSource("current");
-        return;
+      setFileError("Invalid file type. Please upload PDF or DOCX.");
+      setResumeSource("current");
+      isProcessingFileRef.current = false  // release mutex before early return
+      return;
     }
 
-    // Validate File Size (10MB)
+    // Validate file size (10MB)
     if (file.size > 10 * 1024 * 1024) {
-        setFileError("File too large. Maximum size is 10MB.");
-        setResumeSource("current");
-        return;
+      setFileError("File too large. Maximum size is 10MB.");
+      setResumeSource("current");
+      isProcessingFileRef.current = false  // release mutex before early return
+      return;
     }
-    
+
     setIsProcessingFile(true);
     setFileError(null);
     setUploadedFile(null);
-    
+
     try {
       const text = await extractTextFromFile(file);
-      
+
       if (!text || text.trim().length < 50) {
-          throw new Error("Could not extract enough text from file. The document might be scanned/image-based.");
+        throw new Error(
+          "Could not extract enough text from file. The document might be scanned/image-based."
+        );
       }
 
       setUploadedFile(file);
@@ -205,6 +218,8 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       setUploadedText("");
       setResumeSource("current");
     } finally {
+      // Release mutex and reset UI state — always runs even if extractTextFromFile throws
+      isProcessingFileRef.current = false
       setIsProcessingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }

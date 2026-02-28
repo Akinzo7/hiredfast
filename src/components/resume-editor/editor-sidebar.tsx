@@ -99,7 +99,7 @@ export function EditorSidebar() {
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["personalDetails"])
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER)
-  const [hiddenSections, setHiddenSections] = useState<string[]>([])
+  const { hiddenSections, setHiddenSections } = useResumeBuilder()
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false)
   const [customSectionTitle, setCustomSectionTitle] = useState("")
   const [useSavedDetails, setUseSavedDetails] = useState(false)
@@ -140,17 +140,8 @@ export function EditorSidebar() {
           setSectionOrder(parsedOrder.filter((id): id is string => typeof id === "string"))
         }
       }
-
-      const savedHiddenSections = localStorage.getItem("hiredfast_hidden_sections")
-      if (savedHiddenSections) {
-        const parsedHidden = JSON.parse(savedHiddenSections)
-        if (Array.isArray(parsedHidden)) {
-          setHiddenSections(parsedHidden.filter((id): id is string => typeof id === "string"))
-        }
-      }
     } catch {
       setSectionOrder(DEFAULT_SECTION_ORDER)
-      setHiddenSections([])
     }
   }, [])
 
@@ -172,14 +163,6 @@ export function EditorSidebar() {
     }
   }, [sectionOrder])
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("hiredfast_hidden_sections", JSON.stringify(hiddenSections))
-    } catch {
-      // Ignore storage failures
-    }
-  }, [hiddenSections])
-
   const handleExpandAll = () => setExpandedSections(visibleSectionIds)
   const handleCollapseAll = () => setExpandedSections([])
 
@@ -192,12 +175,14 @@ export function EditorSidebar() {
   }
 
   const handleRemoveSection = (sectionId: string) => {
-    setHiddenSections((current) => (current.includes(sectionId) ? current : [...current, sectionId]))
+    if (!hiddenSections.includes(sectionId)) {
+      setHiddenSections([...hiddenSections, sectionId])
+    }
     setExpandedSections((current) => current.filter((id) => id !== sectionId))
   }
 
   const handleReAddSection = (sectionId: string) => {
-    setHiddenSections((current) => current.filter((id) => id !== sectionId))
+    setHiddenSections(hiddenSections.filter((id) => id !== sectionId))
     setExpandedSections((current) => (current.includes(sectionId) ? current : [...current, sectionId]))
   }
 

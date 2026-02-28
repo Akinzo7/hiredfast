@@ -25,7 +25,12 @@ export type InterviewStatus = "idle" | "active" | "generating" | "completed"
 export function useInterview() {
   const [status, setStatus] = useState<InterviewStatus>("idle")
   const [messages, setMessages] = useState<Message[]>([])
+  const messagesRef = useRef<Message[]>([])
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0)
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData | null>(null)
@@ -91,7 +96,11 @@ export function useInterview() {
       content,
       timestamp: new Date(),
     }
-    setMessages((prev) => [...prev, newMessage])
+    setMessages((prev) => {
+      const next = [...prev, newMessage]
+      messagesRef.current = next
+      return next
+    })
     return newMessage
   }
 
@@ -161,7 +170,7 @@ export function useInterview() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          conversationHistory: messages.map((m) => ({
+          conversationHistory: messagesRef.current.map((m) => ({
             role: m.role,
             content: m.content,
           })),

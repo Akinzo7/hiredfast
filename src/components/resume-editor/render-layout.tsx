@@ -652,20 +652,58 @@ const renderMinimalLayout = (data: ResumeData, accentColor: string) => (
   </div>
 )
 
-export function renderLayout(templateId: string, data: ResumeData, accentColor = "#2563eb") {
+// Maps sidebar section IDs to the resumeData fields they control.
+// When a section is hidden we blank its content so layout renderers
+// naturally skip it (they already guard on empty strings).
+function applyHiddenSections(data: ResumeData, hiddenSections: string[]): ResumeData {
+  if (hiddenSections.length === 0) return data
+
+  const hidden = new Set(hiddenSections)
+  return {
+    ...data,
+    summary: hidden.has("summary") ? "" : data.summary,
+    coreCompetencies: hidden.has("coreCompetencies") ? "" : data.coreCompetencies,
+    achievements: hidden.has("achievements") ? "" : data.achievements,
+    workExperienceRich: hidden.has("experience") ? "" : data.workExperienceRich,
+    workExperience: hidden.has("experience") ? [] : data.workExperience,
+    educationRich: hidden.has("education") ? "" : data.educationRich,
+    education: hidden.has("education") ? [] : data.education,
+    skillsRich: hidden.has("skills") ? "" : data.skillsRich,
+    skills: hidden.has("skills")
+      ? { technical: "", soft: "" }
+      : data.skills,
+    projects: hidden.has("projects") ? [] : data.projects,
+    languages: hidden.has("languages") ? [] : data.languages,
+    certifications: hidden.has("certifications") ? [] : data.certifications,
+    associations: hidden.has("associations") ? [] : data.associations,
+    customSections: data.customSections.filter((s) => !hidden.has(s.id)),
+  }
+}
+
+export function renderLayout(
+  templateId: string,
+  data: ResumeData,
+  accentColor = "#2563eb",
+  hiddenSections: string[] = []
+) {
+  // Filter resumeData so hidden sections have their content blanked out
+  // before being passed to any layout renderer. This is simpler and safer
+  // than threading hiddenSections through every sub-renderer.
+  const filtered = applyHiddenSections(data, hiddenSections)
+
   if (SIDEBAR_TEMPLATES.includes(templateId)) {
-    return renderSidebarLayout(data, accentColor)
+    return renderSidebarLayout(filtered, accentColor)
   }
 
   if (CLASSIC_TEMPLATES.includes(templateId)) {
-    return renderClassicLayout(data, accentColor)
+    return renderClassicLayout(filtered, accentColor)
   }
 
   if (CREATIVE_TEMPLATES.includes(templateId)) {
-    return renderCreativeLayout(data, accentColor)
+    return renderCreativeLayout(filtered, accentColor)
   }
 
-  return renderMinimalLayout(data, accentColor)
+  return renderMinimalLayout(filtered, accentColor)
 }
 
 
