@@ -692,7 +692,7 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      <div className="absolute bottom-8 right-8 z-30 flex items-center rounded-full border border-border bg-background px-2 py-2 shadow-lg shrink-0">
+      <div className="absolute bottom-20 right-8 z-30 flex items-center rounded-full border border-border bg-background px-2 py-2 shadow-lg shrink-0">
         <button
           type="button"
           onClick={() => {

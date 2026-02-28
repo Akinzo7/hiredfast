@@ -419,10 +419,10 @@ export function ResumeAnalysisModal({
           : "Needs Work"
     const statusColor =
       score >= 80
-        ? "text-green-600"
+        ? "text-green-500"
         : score >= 60
-          ? "text-amber-600"
-          : "text-red-600"
+          ? "text-amber-500"
+          : "text-red-500"
 
     return (
       <div className="flex flex-col">
@@ -447,9 +447,9 @@ export function ResumeAnalysisModal({
         </div>
 
         {/* Score Row */}
-        <div className="px-4 sm:px-6 mb-4 sm:mb-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+        <div className="px-4 sm:px-6 mb-4 sm:mb-6 flex flex-row items-center gap-6">
           <ScoreCircle score={score} />
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 items-start">
             <p className={cn("text-2xl font-bold", statusColor)}>
               {statusText}
             </p>
@@ -458,7 +458,7 @@ export function ResumeAnalysisModal({
                 setOpen(false)
                 router.push("/resume/editor")
               }}
-              className="inline-flex items-center gap-2 px-4 sm:px-5 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-semibold text-white w-full sm:w-auto justify-center bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 transition-all"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-semibold text-white w-fit justify-center bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 transition-all"
             >
               Improve Resume
               <ArrowRight className="h-4 w-4" />
@@ -471,8 +471,15 @@ export function ResumeAnalysisModal({
           <p className="text-sm font-semibold text-foreground text-center mb-3">
             Score Breakdown
           </p>
-          <div className="border border-border rounded-xl overflow-hidden">
-            {result.categories.map((category, index) => {
+          <div className="border border-border rounded-xl flex flex-col overflow-hidden">
+            {[...result.categories]
+              .sort((a, b) => {
+                const order = ["Content Quality", "Formatting & Readability", "ATS Compatibility", "Professional Presentation"]
+                const idxA = order.indexOf(a.name)
+                const idxB = order.indexOf(b.name)
+                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB)
+              })
+              .map((category, index, arr) => {
               const ratio = category.score / category.maxScore
               const barColor =
                 ratio >= 0.8
@@ -481,52 +488,52 @@ export function ResumeAnalysisModal({
                     ? "bg-amber-500"
                     : "bg-red-500"
               const isExpanded = expandedCategories.has(category.name)
-              const isLast = index === result.categories.length - 1
+              const isLast = index === arr.length - 1
 
               return (
-                <div key={category.name}>
+                <div key={category.name} className="flex flex-col">
                   {/* Row header */}
                   <div
                     onClick={() => toggleCategory(category.name)}
-                    className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3.5 bg-card hover:bg-accent cursor-pointer transition-colors select-none"
+                    className="flex justify-between items-center px-4 py-3.5 bg-card hover:bg-accent cursor-pointer transition-colors select-none w-full"
                   >
                     {/* Category name */}
-                    <span className="text-sm font-medium text-foreground flex-1 min-w-0 mr-4">
+                    <span className="text-sm font-medium text-foreground text-left">
                       {category.name}
                     </span>
 
                     {/* Progress bar + score */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-16 sm:w-28 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="w-24 sm:w-28 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all duration-700",
                             barColor
                           )}
                           style={{
-                            width: `${ratio * 100}%`,
+                            width: `${Math.min(ratio, 1) * 100}%`,
                           }}
                         />
                       </div>
-                      <span className="text-sm text-muted-foreground font-medium whitespace-nowrap w-12 text-right">
+                      <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">
                         {category.score}/{category.maxScore}
                       </span>
+                      {/* Chevron */}
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground ml-1 shrink-0 transition-transform duration-200",
+                          isExpanded && "rotate-180"
+                        )}
+                      />
                     </div>
-
-                    {/* Chevron */}
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 text-muted-foreground ml-2 shrink-0 transition-transform duration-200",
-                        isExpanded && "rotate-180"
-                      )}
-                    />
                   </div>
 
                   {/* Expanded feedback */}
                   {isExpanded && (
-                    <div className="px-3 sm:px-4 py-3 bg-muted/50 border-t border-border space-y-2">
+                    <div className="px-4 py-3 bg-muted border-t border-border flex flex-col gap-2">
                       {category.feedback.map((point, i) => {
-                        const isPositive = point.startsWith("✓")
+                        const isPositive = point.trim().startsWith("✓")
+                        const cleanPoint = point.replace(/^[✓⚠]\s*/, "")
                         return (
                           <div key={i} className="flex items-start gap-2">
                             <span
@@ -540,7 +547,7 @@ export function ResumeAnalysisModal({
                               {isPositive ? "✓" : "⚠"}
                             </span>
                             <span className="text-sm text-foreground/80 leading-relaxed">
-                              {point.replace(/^[✓⚠]\s*/, "")}
+                              {cleanPoint}
                             </span>
                           </div>
                         )
@@ -549,7 +556,7 @@ export function ResumeAnalysisModal({
                   )}
 
                   {/* Divider between rows (not after last) */}
-                  {!isLast && <div className="h-px bg-border" />}
+                  {!isLast && <div className="h-px bg-border w-full" />}
                 </div>
               )
             })}
@@ -568,8 +575,8 @@ export function ResumeAnalysisModal({
         className={cn(
           "p-0 gap-0 bg-background border-border overflow-hidden w-[95vw] rounded-xl",
           view === "results"
-            ? "sm:max-w-[620px] max-h-[90vh] overflow-y-auto"
-            : "sm:max-w-[620px]"
+            ? "sm:max-w-[560px] max-h-[90vh] overflow-y-auto"
+            : "sm:max-w-[560px]"
         )}
         showCloseButton={false}
       >

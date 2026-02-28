@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/resume/editor",
+  "/cover-letter/editor",
   "/interview/setup",
   "/interview/session",
   "/interview/results",

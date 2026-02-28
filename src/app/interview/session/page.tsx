@@ -66,6 +66,7 @@ export default function InterviewSessionPage() {
   const hasStarted = useRef(false)
   const recognitionRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const resultsNavigatedRef = useRef(false)  // prevents double-navigation to results
   const prevStatusRef = useRef(status)
 
   // Read from localStorage
@@ -111,9 +112,12 @@ export default function InterviewSessionPage() {
   // Navigate to results when complete
   useEffect(() => {
     if (status === "completed" && performanceData) {
-      saveResults(performanceData)
-      const t = setTimeout(() => router.push("/interview/results"), 1500)
-      return () => clearTimeout(t)
+      if (!resultsNavigatedRef.current) {
+        resultsNavigatedRef.current = true
+        saveResults(performanceData)
+        const t = setTimeout(() => router.push("/interview/results"), 1500)
+        return () => clearTimeout(t)
+      }
     }
   }, [status, performanceData, router, saveResults])
 
@@ -224,7 +228,20 @@ export default function InterviewSessionPage() {
   const handleEndInterview = () => {
     setShowEndConfirm(false)
     stopSpeaking()
-    router.push("/")
+
+    // If the interview has already completed and results are available,
+    // route to results — do NOT discard them by going home.
+    // This prevents a race where the user confirms "End" at the same moment
+    // the completion useEffect fires, causing two competing navigations.
+    if (status === "completed" && performanceData) {
+      if (!resultsNavigatedRef.current) {
+        resultsNavigatedRef.current = true
+        saveResults(performanceData)
+        router.push("/interview/results")
+      }
+    } else {
+      router.push("/")
+    }
   }
 
   const progressValue = ((currentQuestionNumber - 1) / totalQuestions) * 100

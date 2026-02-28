@@ -112,6 +112,44 @@ export async function getCoverLetters(userId: string) {
   }))
 }
 
+// ---- JOBS ----
+
+export async function saveJob(
+  userId: string,
+  data: {
+    title: string
+    company?: string
+    employmentType?: string
+    description?: string
+    status?: string
+  }
+) {
+  const ref = collection(db, "users", userId, "jobs")
+  const newDoc = await addDoc(ref, {
+    ...data,
+    status: data.status || "Added",
+    createdAt: serverTimestamp(),
+  })
+  return newDoc.id
+}
+
+export async function getJobs(userId: string) {
+  const ref = collection(db, "users", userId, "jobs")
+  const q = query(ref, orderBy("createdAt", "desc"))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as {
+      title: string
+      company?: string
+      employmentType?: string
+      description?: string
+      status?: string
+      createdAt: Timestamp
+    }),
+  }))
+}
+
 // ---- USER PROFILE ----
 
 export async function updateUserProfile(

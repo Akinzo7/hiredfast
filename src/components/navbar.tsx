@@ -20,40 +20,46 @@ import { getUserProfile } from "@/lib/firestore"
 export function Navbar() {
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
+  const uid = user?.uid ?? null  // stable primitive — does not change on token refresh
   const [profileData, setProfileData] = useState<{ uid: string; photoBase64: string } | null>(null)
 
   useEffect(() => {
-    let isMounted = true
-
-    if (!user) {
-      return () => {
-        isMounted = false
-      }
+    // Depend on uid (a stable string primitive) rather than the user object.
+    // Firebase Auth emits a new user object on every token refresh even when
+    // the identity has not changed. uid only changes when a different user signs
+    // in, which is exactly when we want to re-fetch the profile.
+    if (!uid) {
+      setProfileData(null)
+      return
     }
+
+    let cancelled = false  // guard against setting state after unmount
 
     const loadProfile = async () => {
       try {
-        const profile = await getUserProfile(user.uid)
-        if (!isMounted) return
-        setProfileData({
-          uid: user.uid,
-          photoBase64: profile?.photoBase64?.trim() || "",
-        })
+        const profile = await getUserProfile(uid)
+        if (!cancelled) {
+          setProfileData({
+            uid,
+            photoBase64: profile?.photoBase64?.trim() || "",
+          })
+        }
       } catch {
-        if (!isMounted) return
-        setProfileData({
-          uid: user.uid,
-          photoBase64: "",
-        })
+        if (!cancelled) {
+          setProfileData({
+            uid,
+            photoBase64: "",
+          })
+        }
       }
     }
 
     void loadProfile()
 
     return () => {
-      isMounted = false
+      cancelled = true  // prevent stale setState if component unmounts mid-fetch
     }
-  }, [user])
+  }, [uid])  // ← stable string, not the object reference
 
   const handleSignOut = async () => {
     await signOut()

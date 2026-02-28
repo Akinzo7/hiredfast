@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { GEMINI_MODEL_PRO, genAI } from "@/lib/gemini"
+import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini"
 
 export async function POST(req: Request) {
   if (!genAI) {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_PRO })
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_FLASH })
 
     const prompt = `
 You are an expert resume analyst and career coach with years of experience 
@@ -140,6 +140,13 @@ Use this exact structure:
       return NextResponse.json(
         { error: "Failed to parse analysis response. Please try again." },
         { status: 500 }
+      )
+    }
+
+    if (error && typeof error === 'object' && 'status' in error && error.status === 429) {
+      return NextResponse.json(
+        { error: "API rate limit exceeded. Please wait a few moments before trying again." },
+        { status: 429 }
       )
     }
     return NextResponse.json(
