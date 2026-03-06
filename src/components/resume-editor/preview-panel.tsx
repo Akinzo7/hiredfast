@@ -405,8 +405,10 @@ export function PreviewPanel() {
 
   const resumeStyles = useMemo(
     () => ({
-      width: "210mm",
+      width: "794px",
+      minHeight: "1123px",
       transform: `scale(${scale})`,
+      transformOrigin: "top center",
       fontFamily: FONT_FAMILY_MAP[font],
       fontSize: `${fontSize}pt`,
       lineHeight: lineSpacing,
@@ -699,8 +701,13 @@ export function PreviewPanel() {
           </div>
         )}
 
-        <div ref={resumeRef} className="bg-white shadow-2xl origin-top transition-transform duration-200" style={resumeStyles}>
-          {renderedLayout}
+        <div
+          className="w-full overflow-x-hidden flex justify-center"
+          style={{ height: `${scale * 1123}px` }}
+        >
+          <div ref={resumeRef} className="bg-white shadow-2xl transition-transform duration-200" style={resumeStyles}>
+            {renderedLayout}
+          </div>
         </div>
       </div>
 

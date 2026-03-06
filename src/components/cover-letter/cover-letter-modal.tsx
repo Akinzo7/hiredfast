@@ -103,6 +103,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
   // File upload
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   // Generation
   const [isGenerating, setIsGenerating] = useState(false)
@@ -132,6 +133,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     setGenerationProgress(0)
     setGenerationError(null)
     setIsGenerating(false)
+    setUploadError(null)
   }, [open])
 
   // Cleanup interval and abort controller on unmount
@@ -214,9 +216,12 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     if (!isValid || file.size > 10 * 1024 * 1024) return
 
     setIsUploading(true)
+    setUploadError(null)
     try {
       const text = await extractTextFromFile(file)
-      if (!text || text.trim().length < 50) return
+      if (!text || text.trim().length < 50) {
+        throw new Error("Could not extract enough text from file.")
+      }
 
       const uploadedResume: Resume = {
         id: `upload-${Date.now()}`,
@@ -228,11 +233,22 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
       }
       setResumes((prev) => [uploadedResume, ...prev])
       setSelectedResumeId(uploadedResume.id)
-    } catch {
-      // silently fail
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    } catch (err: any) {
+      const message = err?.message ?? ""
+      const isScanned =
+        message.toLowerCase().includes("no text") ||
+        message.toLowerCase().includes("scanned") ||
+        message.toLowerCase().includes("image-only") ||
+        message.toLowerCase().includes("could not extract")
+
+      setUploadError(
+        isScanned
+          ? "This PDF appears to be scanned or image-only. Please export your resume as a DOCX or a text-based PDF and try again."
+          : "Failed to read the file. Please try a different file."
+      )
     } finally {
       setIsUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -525,6 +541,33 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                 )}
               </Button>
             </div>
+
+            {/* Upload error */}
+            {uploadError && (
+              <div className="mx-5 mt-2">
+                <div
+                  role="alert"
+                  className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex flex-col gap-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span>{uploadError}</span>
+                    <button
+                      onClick={() => setUploadError(null)}
+                      aria-label="Dismiss error"
+                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="self-start text-red-700 underline text-sm font-medium"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Error toast */}
             {generationError && (

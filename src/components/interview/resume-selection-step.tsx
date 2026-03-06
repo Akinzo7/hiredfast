@@ -22,6 +22,7 @@ interface ResumeSelectionStepProps {
   uploadError: string | null
   searchQuery: string
   onSearchChange: (query: string) => void
+  onDismissError?: () => void
 }
 
 function formatTimeAgo(date: Date): string {
@@ -49,6 +50,7 @@ export function ResumeSelectionStep({
   uploadError,
   searchQuery,
   onSearchChange,
+  onDismissError,
 }: ResumeSelectionStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -97,7 +99,27 @@ export function ResumeSelectionStep({
       </div>
 
       {uploadError && (
-        <p className="text-sm text-red-400 px-1">{uploadError}</p>
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex flex-col gap-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <span>{uploadError}</span>
+            <button
+              onClick={() => onDismissError?.()}
+              aria-label="Dismiss error"
+              className="text-red-500 hover:text-red-700 flex-shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="self-start text-red-700 underline text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
       )}
 
       <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">

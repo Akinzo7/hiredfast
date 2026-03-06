@@ -112,8 +112,19 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
 
       setResumes((prev) => [...prev, newResume])
       setSelectedResumeId(newResume.id)
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Failed to process file")
+    } catch (err: any) {
+      const message = err?.message ?? ""
+      const isScanned =
+        message.toLowerCase().includes("no text") ||
+        message.toLowerCase().includes("scanned") ||
+        message.toLowerCase().includes("image-only") ||
+        message.toLowerCase().includes("could not extract")
+
+      setUploadError(
+        isScanned
+          ? "This PDF appears to be scanned or image-only. Please export your resume as a DOCX or a text-based PDF and try again."
+          : "Failed to read the file. Please try a different file."
+      )
     } finally {
       setIsUploading(false)
     }
@@ -197,6 +208,7 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
               uploadError={uploadError}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              onDismissError={() => setUploadError(null)}
             />
           ) : (
             <JobDescriptionStep

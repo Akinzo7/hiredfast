@@ -63,6 +63,27 @@ function formatTimeAgo(date: Date): string {
   return `${diffWeek}w ago`
 }
 
+function parseFeedback(raw: string): { finding: string; fix: string } {
+  const markers = [
+    "Suggestion:",
+    "Consider ",
+    "To fix",
+    "To improve",
+    "Recommended fix:",
+    "Fix:",
+  ]
+  for (const marker of markers) {
+    const idx = raw.indexOf(marker)
+    if (idx > 0) {
+      return {
+        finding: raw.slice(0, idx).trim(),
+        fix: raw.slice(idx).trim(),
+      }
+    }
+  }
+  return { finding: raw.trim(), fix: "" }
+}
+
 function ScoreCircle({ score }: { score: number }) {
   const radius = 52
   const circumference = 2 * Math.PI * radius
@@ -210,9 +231,18 @@ export function ResumeAnalysisModal({
 
       setResumes((prev) => [newResume, ...prev])
       setSelectedResumeId(newResume.id)
-    } catch (err) {
+    } catch (err: any) {
+      const message = err?.message ?? ""
+      const isScanned =
+        message.toLowerCase().includes("no text") ||
+        message.toLowerCase().includes("scanned") ||
+        message.toLowerCase().includes("image-only") ||
+        message.toLowerCase().includes("could not extract")
+
       setUploadError(
-        err instanceof Error ? err.message : "Failed to process file."
+        isScanned
+          ? "This PDF appears to be scanned or image-only. Please export your resume as a DOCX or a text-based PDF and try again."
+          : "Failed to read the file. Please try a different file."
       )
     } finally {
       setIsUploading(false)
@@ -312,7 +342,29 @@ export function ResumeAnalysisModal({
 
       {/* Upload error */}
       {uploadError && (
-        <p className="px-4 sm:px-6 pb-2 text-sm text-red-500">{uploadError}</p>
+        <div className="px-4 sm:px-6 pb-2">
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex flex-col gap-2"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span>{uploadError}</span>
+              <button
+                onClick={() => setUploadError(null)}
+                aria-label="Dismiss error"
+                className="text-red-500 hover:text-red-700 flex-shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="self-start text-red-700 underline text-sm font-medium"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Analysis error (if previous attempt failed) */}
@@ -543,31 +595,28 @@ export function ResumeAnalysisModal({
                   {/* Expanded feedback */}
                   {isExpanded && (
                     <div className="px-4 py-3 bg-muted border-t border-border flex flex-col gap-2">
-                      {category.feedback.map((point, i) => {
-                        const isPositive = point.trim().startsWith("✓")
-                        const cleanPoint = point.replace(/^[✓⚠]\s*/, "")
-                        return (
-                          <div key={i} className="flex items-start gap-2">
-                            <span
-                              className={cn(
-                                "text-sm font-bold mt-0.5 shrink-0 flex items-center",
-                                isPositive
-                                  ? "text-green-700"
-                                  : "text-amber-800"
+                      <dl className="space-y-3">
+                        {category.feedback.map((raw, i) => {
+                          const { finding, fix } = parseFeedback(raw)
+                          return (
+                            <div key={i} className="rounded-md border border-gray-200 p-3 text-sm">
+                              <dt className="font-medium text-gray-900 flex items-start gap-2">
+                                <AlertTriangle
+                                  className="w-4 h-4 text-amber-800 mt-0.5 flex-shrink-0"
+                                  aria-hidden="true"
+                                />
+                                {finding}
+                              </dt>
+                              {fix && (
+                                <dd className="mt-1 ml-6 text-gray-600">
+                                  <span className="font-medium text-green-700">Fix: </span>
+                                  {fix}
+                                </dd>
                               )}
-                            >
-                              {isPositive ? (
-                                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                              ) : (
-                                <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                              )}
-                            </span>
-                            <span className="text-sm text-foreground/80 leading-relaxed">
-                              {cleanPoint}
-                            </span>
-                          </div>
-                        )
-                      })}
+                            </div>
+                          )
+                        })}
+                      </dl>
                     </div>
                   )}
 
