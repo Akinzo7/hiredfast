@@ -14,7 +14,14 @@ import {
   signOut as firebaseSignOut,
 } from "firebase/auth"
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
-import { auth, db, googleProvider, facebookProvider } from "@/lib/firebase"
+import {
+  auth,
+  db,
+  googleProvider,
+  signInWithEmail as firebaseSignInWithEmail,
+  registerWithEmail as firebaseRegisterWithEmail,
+  resetPassword as firebaseResetPassword,
+} from "@/lib/firebase"
 
 const initializedUids = new Set<string>()
 
@@ -22,7 +29,9 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   signInWithGoogle: () => Promise<void>
-  signInWithFacebook: () => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  registerWithEmail: (email: string, password: string) => Promise<void>
+  resetPassword: (email: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -70,14 +79,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const signInWithFacebook = async () => {
-    const result = await signInWithPopup(auth, facebookProvider)
-    const idToken = await result.user.getIdToken()
+  const handleSignInWithEmail = async (email: string, password: string) => {
+    await firebaseSignInWithEmail(email, password)
+    const idToken = await auth.currentUser!.getIdToken()
     await fetch("/api/auth/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
     })
+  }
+
+  const handleRegisterWithEmail = async (email: string, password: string) => {
+    await firebaseRegisterWithEmail(email, password)
+    const idToken = await auth.currentUser!.getIdToken()
+    await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    })
+  }
+
+  const handleResetPassword = async (email: string) => {
+    await firebaseResetPassword(email)
   }
 
   const signOut = async () => {
@@ -87,7 +110,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signInWithGoogle, signInWithFacebook, signOut }}
+      value={{
+        user,
+        loading,
+        signInWithGoogle,
+        signInWithEmail: handleSignInWithEmail,
+        registerWithEmail: handleRegisterWithEmail,
+        resetPassword: handleResetPassword,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

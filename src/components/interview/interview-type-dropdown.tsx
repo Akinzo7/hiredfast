@@ -80,12 +80,17 @@ export function InterviewTypeDropdown({ value, onChange }: InterviewTypeDropdown
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 bg-background border border-border text-foreground text-sm rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {toast}
-        </div>
-      )}
+      {/* Toast — always in DOM so aria-live region is registered */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 bg-background border border-border text-foreground text-sm rounded-xl shadow-2xl transition-opacity duration-300 ${
+          toast ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        {toast ?? ""}
+      </div>
     </div>
   )
 }

@@ -33,9 +33,14 @@ export default function ResumesPage() {
       try {
         const serialized = JSON.stringify(resume.data)
         // Only write if the data has actual content beyond an empty object
-        if (serialized && serialized !== "{}") {
-          localStorage.setItem("hiredfast_resume_data", serialized)
+        if (!serialized || serialized === "{}") {
+          setEditError("This resume has no content to edit.")
+          return
         }
+        localStorage.setItem("hiredfast_resume_data", serialized)
+        // Success
+        setEditingId(resume.id)
+        router.push("/resume/editor")
       } catch (err) {
         console.error("Failed to write resume to localStorage:", err)
         setEditError(
@@ -44,8 +49,6 @@ export default function ResumesPage() {
         return
       }
     }
-    setEditingId(resume.id)
-    router.push("/resume/editor")
   }
 
   return (

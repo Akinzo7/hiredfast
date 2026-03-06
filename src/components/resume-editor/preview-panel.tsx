@@ -140,15 +140,15 @@ const serializeResumeToText = (data: ResumeData): string => {
 
 const getScoreRingColor = (score: number | null) => {
   if (score === null) return "#64748b"
-  if (score >= 80) return "#22c55e"
-  if (score >= 60) return "#eab308"
+  if (score >= 80) return "#15803d"
+  if (score >= 60) return "#92400e"
   return "#ef4444"
 }
 
 const getScoreStatus = (score: number | null) => {
   if (score === null) return { label: "Needs Data", className: "text-slate-400" }
-  if (score >= 80) return { label: "Ready to Apply", className: "text-green-500" }
-  if (score >= 60) return { label: "Almost There", className: "text-yellow-500" }
+  if (score >= 80) return { label: "Ready to Apply", className: "text-green-700" }
+  if (score >= 60) return { label: "Almost There", className: "text-amber-800" }
   return { label: "Needs Work", className: "text-red-500" }
 }
 
@@ -186,6 +186,7 @@ export function PreviewPanel() {
   const colorPickerRef = useRef<HTMLDivElement | null>(null)
   const toolbarRef = useRef<HTMLDivElement | null>(null)
   const userAdjustedScale = useRef(false)
+  const previewContainerRef = useRef<HTMLDivElement | null>(null)
 
   const currentTemplateName =
     TEMPLATE_OPTIONS.find((template) => template.id === templateId)?.name ?? "Select Template"
@@ -362,17 +363,19 @@ export function PreviewPanel() {
   }, [])
 
   useEffect(() => {
-    const handleResize = () => {
+    if (!previewContainerRef.current) return
+    const observer = new ResizeObserver(([entry]) => {
       if (userAdjustedScale.current) return
-      if (window.innerWidth < 640) {
-        setScale(0.35)
-      } else if (window.innerWidth < 768) {
-        setScale(0.45)
+      const containerWidth = entry.contentRect.width
+      if (containerWidth > 0) {
+        // 794px = 210mm at 96dpi
+        const padding = 96 // account for p-12 (3rem * 2 sides)
+        const availableWidth = containerWidth - padding
+        setScale(Math.min(1, availableWidth / 794))
       }
-    }
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    })
+    observer.observe(previewContainerRef.current)
+    return () => observer.disconnect()
   }, [])
 
   const scoreColor = getScoreRingColor(aiScore)
@@ -382,9 +385,9 @@ export function PreviewPanel() {
     aiScore === null
       ? "border-slate-500"
       : aiScore >= 80
-        ? "border-green-500"
+        ? "border-green-700"
         : aiScore >= 60
-          ? "border-yellow-500"
+          ? "border-amber-800"
           : "border-red-500"
 
   const toggleDropdown = (name: "lineSpacing" | "fontSize" | "font") => {
@@ -421,8 +424,10 @@ export function PreviewPanel() {
         accentColor={accentColor}
       />
 
-      <div className="h-16 border-b bg-background px-4 shrink-0 flex items-center justify-between gap-3" ref={toolbarRef}>
-        <div className="flex items-center gap-2">
+      <div className="border-b bg-background px-4 shrink-0">
+        {/* Row 1: Template + Color */}
+        <div className="flex flex-wrap gap-2 py-2 items-center">
+          <div className="min-w-0 flex-shrink-0">
           <Button
             variant="outline"
             className="min-w-[190px] justify-between bg-muted border-border"
@@ -431,8 +436,9 @@ export function PreviewPanel() {
             <span className="truncate">{currentTemplateName}</span>
             <ChevronDown className="h-4 w-4" />
           </Button>
+          </div>
 
-          <div className="relative" ref={colorPickerRef}>
+          <div className="min-w-0 flex-shrink-0 relative" ref={colorPickerRef}>
             <button
               type="button"
               onClick={() => setShowColorPicker((current) => !current)}
@@ -472,8 +478,9 @@ export function PreviewPanel() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        {/* Row 2: Spacing + Font + Download */}
+        <div className="flex flex-wrap gap-2 pb-2 items-center">
+          <div className="min-w-0 flex-shrink-0 relative">
             <button
               type="button"
               onClick={() => toggleDropdown("lineSpacing")}
@@ -506,7 +513,7 @@ export function PreviewPanel() {
             )}
           </div>
 
-          <div className="relative">
+          <div className="min-w-0 flex-shrink-0 relative">
             <button
               type="button"
               onClick={() => toggleDropdown("fontSize")}
@@ -538,10 +545,8 @@ export function PreviewPanel() {
               </div>
             )}
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
+          <div className="min-w-0 flex-shrink-0 relative">
             <button
               type="button"
               onClick={() => toggleDropdown("font")}
@@ -575,13 +580,15 @@ export function PreviewPanel() {
             )}
           </div>
 
+          <div className="ml-auto flex-shrink-0">
           <Button className="h-10 gap-2" onClick={handleDownload}>
             <Download className="h-4 w-4" /> Download
           </Button>
+          </div>
         </div>
       </div>
 
-      <div className="relative flex-1 overflow-auto bg-muted/50 p-8 md:p-12 flex items-start justify-center">
+      <div ref={previewContainerRef} className="relative flex-1 overflow-auto overflow-x-hidden bg-muted/50 p-8 md:p-12 flex items-start justify-center">
         {!showScorePanel ? (
           <button
             type="button"
@@ -664,7 +671,13 @@ export function PreviewPanel() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium w-28 truncate">{category.name}</span>
                           <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
-                            <div className={cn("h-full", categoryColor)} style={{ width: `${categoryProgress}%` }} />
+                            <div
+                              role="progressbar"
+                              aria-valuenow={category.score}
+                              aria-valuemin={0}
+                              aria-valuemax={category.maxScore}
+                              aria-label={`${category.name} score: ${category.score} out of ${category.maxScore}`}
+                              className={cn("h-full", categoryColor)} style={{ width: `${categoryProgress}%` }} />
                           </div>
                           <span className="text-xs text-muted-foreground">{category.score}/{category.maxScore}</span>
                           <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />

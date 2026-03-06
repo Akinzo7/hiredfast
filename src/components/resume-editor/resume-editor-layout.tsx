@@ -17,7 +17,7 @@ export function ResumeEditorLayout({ sidebar, preview }: ResumeEditorLayoutProps
         </aside>
 
         {/* Right Panel - Preview */}
-        <section className="flex-1 bg-muted/30 flex flex-col overflow-hidden relative min-h-[400px] md:min-h-0">
+        <section className="flex-1 bg-muted/30 flex flex-col overflow-hidden overflow-x-hidden relative min-h-[400px] md:min-h-0">
           {preview}
         </section>
       </main>

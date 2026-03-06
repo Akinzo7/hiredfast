@@ -105,9 +105,11 @@ export function EditorSidebar() {
   const [useSavedDetails, setUseSavedDetails] = useState(false)
   const [isRegeneratingSection, setIsRegeneratingSection] = useState("")
   const [dragIndicator, setDragIndicator] = useState<{ sectionId: string; position: DragPosition } | null>(null)
+  const [revertToast, setRevertToast] = useState<{ sectionId: string; title: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const draggedSectionRef = useRef<string>("")
+  const previousContentRef = useRef<Record<string, string>>({})
 
   const allSections = useMemo(() => {
     const custom = resumeData.customSections.map((section) => ({ id: section.id, title: section.title }))
@@ -301,6 +303,7 @@ export function EditorSidebar() {
     if (!config || isRegeneratingSection) return
 
     setIsRegeneratingSection(sectionId)
+    previousContentRef.current[sectionId] = config.content
 
     try {
       const response = await fetch("/api/generate-section", {
@@ -326,6 +329,10 @@ export function EditorSidebar() {
       const data = (await response.json()) as { content?: string }
       if (typeof data.content === "string") {
         config.onApply(data.content)
+        setRevertToast({ sectionId, title: config.title })
+        setTimeout(() => {
+          setRevertToast((current) => (current?.sectionId === sectionId ? null : current))
+        }, 10000)
       }
     } catch (error) {
       console.error("Regeneration error:", error)
@@ -731,8 +738,26 @@ export function EditorSidebar() {
                     draggedSectionRef.current = ""
                     setDragIndicator(null)
                   }}
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label="Drag section"
+                  className="text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-blue-500 rounded p-0.5"
+                  aria-label={`Drag to reorder ${section.title}. Use Alt + Up/Down arrows to move.`}
+                  aria-roledescription="sortable"
+                  onKeyDown={(e) => {
+                    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      
+                      const currentIndex = visibleSectionIds.indexOf(sectionId)
+                      if (currentIndex === -1) return
+                      
+                      const targetIndex = e.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1
+                      if (targetIndex >= 0 && targetIndex < visibleSectionIds.length) {
+                        const targetSectionId = visibleSectionIds[targetIndex]
+                        draggedSectionRef.current = sectionId
+                        reorderSections(targetSectionId, e.key === "ArrowUp" ? "before" : "after")
+                        draggedSectionRef.current = ""
+                      }
+                    }
+                  }}
                 >
                   <GripVertical className="h-4 w-4" />
                 </button>
@@ -778,6 +803,42 @@ export function EditorSidebar() {
             </div>
           )
         })}
+      </div>
+
+      {revertToast && (
+        <div className="fixed bottom-4 right-4 z-50 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-start gap-4 animate-in slide-in-from-bottom-5 w-[340px] max-w-[calc(100vw-32px)]">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{revertToast.title} regenerated</p>
+            <p className="text-xs text-slate-300 mt-0.5">Not happy with the new version?</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const config = getRegenerationConfig(revertToast.sectionId)
+              const prev = previousContentRef.current[revertToast.sectionId]
+              if (config && prev) {
+                config.onApply(prev)
+              }
+              setRevertToast(null)
+            }}
+            className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-md font-medium transition-colors shrink-0"
+          >
+            Revert
+          </button>
+          <button 
+            onClick={() => setRevertToast(null)} 
+            className="text-slate-400 hover:text-white shrink-0 mt-0.5 -mr-1"
+            aria-label="Dismiss toast"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      
+      {/* Visually hidden instructions for screen readers */}
+      <div className="sr-only" id="sortable-instructions">
+        Press Space to select, arrow keys to move, Space again to drop.
+        Or use Alt + Arrow Up and Alt + Arrow Down to move the section directly.
       </div>
     </div>
   )

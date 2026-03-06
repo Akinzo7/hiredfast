@@ -9,6 +9,8 @@ import {
   ArrowRight,
   ChevronDown,
   Loader2,
+  CheckCircle,
+  AlertTriangle,
 } from "lucide-react"
 import {
   Dialog,
@@ -65,7 +67,7 @@ function ScoreCircle({ score }: { score: number }) {
   const radius = 52
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
-  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444"
+  const color = score >= 80 ? "#15803d" : score >= 60 ? "#92400e" : "#ef4444"
 
   return (
     <div className="relative flex items-center justify-center shrink-0">
@@ -419,9 +421,9 @@ export function ResumeAnalysisModal({
           : "Needs Work"
     const statusColor =
       score >= 80
-        ? "text-green-500"
+        ? "text-green-700"
         : score >= 60
-          ? "text-amber-500"
+          ? "text-amber-800"
           : "text-red-500"
 
     return (
@@ -450,7 +452,12 @@ export function ResumeAnalysisModal({
         <div className="px-4 sm:px-6 mb-4 sm:mb-6 flex flex-row items-center gap-6">
           <ScoreCircle score={score} />
           <div className="flex flex-col gap-3 items-start">
-            <p className={cn("text-2xl font-bold", statusColor)}>
+            <p className={cn("text-2xl font-bold flex items-center gap-2", statusColor)}>
+              {score >= 70 ? (
+                <CheckCircle className="w-5 h-5" aria-hidden="true" />
+              ) : (
+                <AlertTriangle className="w-5 h-5" aria-hidden="true" />
+              )}
               {statusText}
             </p>
             <button
@@ -506,6 +513,11 @@ export function ResumeAnalysisModal({
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="w-24 sm:w-28 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
+                          role="progressbar"
+                          aria-valuenow={category.score}
+                          aria-valuemin={0}
+                          aria-valuemax={category.maxScore}
+                          aria-label={`${category.name} score: ${category.score} out of ${category.maxScore}`}
                           className={cn(
                             "h-full rounded-full transition-all duration-700",
                             barColor
@@ -538,13 +550,17 @@ export function ResumeAnalysisModal({
                           <div key={i} className="flex items-start gap-2">
                             <span
                               className={cn(
-                                "text-sm font-bold mt-0.5 shrink-0",
+                                "text-sm font-bold mt-0.5 shrink-0 flex items-center",
                                 isPositive
-                                  ? "text-green-500"
-                                  : "text-amber-500"
+                                  ? "text-green-700"
+                                  : "text-amber-800"
                               )}
                             >
-                              {isPositive ? "✓" : "⚠"}
+                              {isPositive ? (
+                                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                              ) : (
+                                <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+                              )}
                             </span>
                             <span className="text-sm text-foreground/80 leading-relaxed">
                               {cleanPoint}

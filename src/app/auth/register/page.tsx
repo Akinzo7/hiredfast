@@ -1,30 +1,27 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Box, Loader2, Mail } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 
-function LoginContent() {
+export default function RegisterPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const { signInWithGoogle, signInWithEmail, resetPassword } = useAuth()
+  const { signInWithGoogle, registerWithEmail } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
   const [loadingProvider, setLoadingProvider] = useState<"google" | "email" | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [resetSent, setResetSent] = useState(false)
 
   const handleGoogleSignIn = async () => {
     setLoadingProvider("google")
     setError(null)
     try {
       await signInWithGoogle()
-      router.push(callbackUrl)
+      router.push("/dashboard")
     } catch (err: any) {
       if (err?.code !== "auth/popup-closed-by-user") {
         setError("Failed to sign in with Google. Please try again.")
@@ -34,40 +31,36 @@ function LoginContent() {
     }
   }
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password) return
-    setLoadingProvider("email")
     setError(null)
-    setResetSent(false)
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.")
+      return
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.")
+      return
+    }
+
+    setLoadingProvider("email")
     try {
-      await signInWithEmail(email, password)
-      router.push(callbackUrl)
+      await registerWithEmail(email, password)
+      router.push("/dashboard")
     } catch (err: any) {
       const code = err?.code
-      if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
-        setError("Invalid email or password.")
-      } else if (code === "auth/too-many-requests") {
-        setError("Too many attempts. Please try again later.")
+      if (code === "auth/email-already-in-use") {
+        setError("An account with this email already exists.")
+      } else if (code === "auth/weak-password") {
+        setError("Password is too weak. Use at least 8 characters.")
+      } else if (code === "auth/invalid-email") {
+        setError("Please enter a valid email address.")
       } else {
-        setError(err.message ?? "Sign in failed. Please try again.")
+        setError(err.message ?? "Registration failed. Please try again.")
       }
     } finally {
       setLoadingProvider(null)
-    }
-  }
-
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setError("Enter your email above, then click Forgot password.")
-      return
-    }
-    setError(null)
-    try {
-      await resetPassword(email)
-      setResetSent(true)
-    } catch {
-      setError("Could not send reset email. Please check the address.")
     }
   }
 
@@ -87,10 +80,10 @@ function LoginContent() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-card-foreground">
-            Welcome back
+            Create your account
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Sign in to save your resumes and track your progress
+            Get started with your AI-powered career toolkit
           </p>
         </div>
 
@@ -100,14 +93,8 @@ function LoginContent() {
           </div>
         )}
 
-        {resetSent && (
-          <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-sm text-green-600 text-center dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
-            Password reset email sent! Check your inbox.
-          </div>
-        )}
-
         {/* Email / Password form */}
-        <form onSubmit={handleEmailSignIn} className="space-y-3 mb-4">
+        <form onSubmit={handleRegister} className="space-y-3 mb-4">
           <input
             type="email"
             placeholder="Email address"
@@ -118,22 +105,22 @@ function LoginContent() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Password (min. 8 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
             className="w-full h-11 px-4 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot password?
-            </button>
-          </div>
+          <input
+            type="password"
+            placeholder="Confirm password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+            minLength={8}
+            className="w-full h-11 px-4 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
 
           <button
             type="submit"
@@ -145,7 +132,7 @@ function LoginContent() {
             ) : (
               <Mail className="h-5 w-5 shrink-0" />
             )}
-            Sign in with Email
+            Create Account
           </button>
         </form>
 
@@ -188,12 +175,12 @@ function LoginContent() {
         </button>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Don&apos;t have an account?{" "}
+          Already have an account?{" "}
           <Link
-            href="/auth/register"
+            href="/auth/login"
             className="font-medium text-blue-500 hover:text-blue-400 transition-colors"
           >
-            Sign up
+            Sign in
           </Link>
         </p>
 
@@ -216,13 +203,5 @@ function LoginContent() {
         ← Back to Home
       </Link>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
   )
 }

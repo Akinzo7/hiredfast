@@ -51,6 +51,7 @@ export default function DashboardLayout({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg",
                 "text-sm transition-colors",

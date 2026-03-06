@@ -1,5 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from "firebase/auth"
+import {
+  getAuth,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
@@ -19,4 +25,23 @@ export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const googleProvider = new GoogleAuthProvider()
-export const facebookProvider = new FacebookAuthProvider()
+
+// ---- Email / Password helpers ----
+
+export async function registerWithEmail(
+  email: string,
+  password: string
+): Promise<void> {
+  await createUserWithEmailAndPassword(auth, email, password)
+}
+
+export async function signInWithEmail(
+  email: string,
+  password: string
+): Promise<void> {
+  await signInWithEmailAndPassword(auth, email, password)
+}
+
+export async function resetPassword(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email)
+}

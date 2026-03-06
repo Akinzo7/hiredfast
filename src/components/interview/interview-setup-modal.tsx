@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Mic } from "lucide-react"
+import { ArrowLeft, Mic, Loader2 } from "lucide-react"
 import { ResumeSelectionStep } from "./resume-selection-step"
 import { JobDescriptionStep } from "./job-description-step"
 import { extractTextFromFile } from "@/lib/file-parser"
@@ -39,6 +39,12 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
   const [jobDescription, setJobDescription] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [jobTitle, setJobTitle] = useState("")
+  const [isNavigating, setIsNavigating] = useState(false)
+
+  // Prefetch interview/setup route for faster navigation
+  useEffect(() => {
+    router.prefetch("/interview/setup")
+  }, [router])
 
   // Load saved resume from localStorage on mount
   useEffect(() => {
@@ -132,7 +138,8 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
       console.error("Failed to save interview setup data:", e)
     }
 
-    setOpen(false)
+    setIsNavigating(true)
+    // Keep modal open briefly to show the spinner while navigating
     router.push("/interview/setup")
   }
 
@@ -218,10 +225,19 @@ export function InterviewSetupModal({ children }: InterviewSetupModalProps) {
           </Button>
           <Button
             onClick={handleStartInterview}
-            disabled={activeStep === 1 ? !isStep1Valid : !isStep2Valid}
+            disabled={activeStep === 1 ? !isStep1Valid : (!isStep2Valid || isNavigating)}
             className="bg-orange-600 hover:bg-orange-700 text-white gap-2 px-4 sm:px-6"
           >
-            {activeStep === 1 ? "Start Interview Simulation" : "Continue"}
+            {isNavigating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Preparing...
+              </>
+            ) : activeStep === 1 ? (
+              "Start Interview Simulation"
+            ) : (
+              "Continue"
+            )}
           </Button>
         </div>
       </DialogContent>

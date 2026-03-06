@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useRef } from "react"
-import { CheckCircle2, Lightbulb, Sparkles, RotateCcw, Home } from "lucide-react"
+import { CheckCircle2, Lightbulb, Sparkles, RotateCcw, Home, CheckCircle, AlertTriangle } from "lucide-react"
 import { useInterview, PerformanceData } from "@/hooks/use-interview"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,11 +15,11 @@ function ScoreCircle({ score }: { score: number }) {
   const radius = 70
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
-  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444"
+  const color = score >= 80 ? "#15803d" : score >= 60 ? "#92400e" : "#ef4444"
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg width="160" height="160" className="-rotate-90">
+      <svg width="160" height="160" className="-rotate-90" aria-hidden="true">
         <circle
           cx="80"
           cy="80"
@@ -42,10 +42,11 @@ function ScoreCircle({ score }: { score: number }) {
           className="transition-all duration-1000 ease-out"
         />
       </svg>
-      <div className="absolute flex flex-col items-center">
+      <div className="absolute flex flex-col items-center" aria-hidden="true">
         <span className="text-4xl font-bold text-foreground">{score}</span>
         <span className="text-sm text-muted-foreground">/100</span>
       </div>
+      <span className="sr-only">Score: {score} out of 100</span>
     </div>
   )
 }

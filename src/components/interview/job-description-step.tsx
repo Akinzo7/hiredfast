@@ -32,15 +32,19 @@ export function JobDescriptionStep({
           <Label className="text-sm font-semibold text-white">
             Job Description <span className="text-red-400">*</span>
           </Label>
-          <span
-            className={cn(
-              "text-xs font-medium px-2 py-0.5 rounded-full",
-              meetsMinimum
-                ? "bg-green-500/20 text-green-400"
-                : "bg-orange-500/20 text-orange-400"
+          <span className="text-xs text-slate-500">
+            {charCount.toLocaleString()} chars
+            {charCount < 50 && (
+              <span className="text-red-500 ml-1">(50 minimum)</span>
             )}
-          >
-            {charCount} / 50
+            {charCount >= 50 && charCount <= 8000 && (
+              <span className="text-green-700 ml-1">✓</span>
+            )}
+            {charCount > 8000 && (
+              <span className="text-amber-500 ml-1">
+                · Long descriptions may reduce AI accuracy (recommended max: 8,000)
+              </span>
+            )}
           </span>
         </div>
         <Textarea
@@ -48,9 +52,16 @@ export function JobDescriptionStep({
           rows={8}
           value={jobDescription}
           onChange={(e) => onJobDescriptionChange(e.target.value)}
-          className="resize-none bg-slate-800 border-slate-700/50 text-white placeholder:text-slate-500 focus-visible:ring-blue-500/50"
+          className={cn(
+            "resize-none bg-slate-800 text-white placeholder:text-slate-500",
+            charCount > 8000
+              ? "border-amber-400 focus-visible:ring-amber-400"
+              : "border-slate-700/50 focus-visible:ring-blue-500/50"
+          )}
         />
-        <p className="text-xs text-slate-500">Minimum 50 characters required</p>
+        <p className="text-xs text-slate-400 mt-1">
+          Minimum 50 characters · 500–5,000 recommended · 8,000 max for best results
+        </p>
       </div>
 
       <div className="space-y-2">

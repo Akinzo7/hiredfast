@@ -200,10 +200,16 @@ export function RichTextEditor({ value, onChange, placeholder = "Write here..." 
         </ToolbarButton>
       </div>
 
-      <div className="rounded-b-lg border border-border bg-muted/40">
+      <div
+        className="rounded-b-lg border border-border bg-muted/40"
+        role="textbox"
+        aria-multiline="true"
+        aria-label={`${placeholder} editor`}
+        aria-describedby="editor-word-count"
+      >
         <EditorContent editor={editor} />
         <div className="border-t border-border px-3 py-1 text-right text-xs text-muted-foreground">
-          Word count: {editor.storage.characterCount.words()}
+          <span id="editor-word-count">Word count: {editor.storage.characterCount.words()}</span>
         </div>
       </div>
     </div>

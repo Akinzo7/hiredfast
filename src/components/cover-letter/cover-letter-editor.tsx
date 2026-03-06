@@ -415,7 +415,6 @@ export function CoverLetterEditor() {
           </div>
         </aside>
 
-        {/* ====== RIGHT PANEL - Preview ====== */}
         <section
           ref={previewContainerRef}
           className="flex-1 bg-muted/30 flex flex-col overflow-hidden relative min-h-[400px] md:min-h-0"
@@ -588,10 +587,10 @@ export function CoverLetterEditor() {
           </div>
 
           {/* Preview area */}
-          <div className="flex-1 overflow-auto p-6 flex justify-center items-start">
+          <div className="flex-1 overflow-auto p-6 flex flex-row gap-4 justify-center items-start">
             <div
               ref={previewRef}
-              className="bg-white shadow-2xl w-full max-w-[650px] origin-top transition-transform"
+              className="bg-white shadow-2xl origin-top transition-transform mx-auto w-full max-w-[650px]"
               style={{
                 aspectRatio: "1/1.414",
                 transform: `scale(${zoom})`,

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { getJobs, saveJob, getResumes } from "@/lib/firestore"
 import { extractTextFromFile } from "@/lib/file-parser"
 import { Timestamp } from "firebase/firestore"
+import FocusTrap from "focus-trap-react"
 
 // ---- Types ----
 
@@ -618,7 +619,21 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
 
             {/* ====== SCREEN 3: Generation Overlay ====== */}
             {step === "generating" && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
+              <FocusTrap
+                active={step === "generating"}
+                focusTrapOptions={{
+                  escapeDeactivates: false,
+                  allowOutsideClick: false,
+                  initialFocus: false,
+                }}
+              >
+              <div
+                className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Generating cover letter"
+                aria-live="polite"
+              >
                 <div className="bg-popover rounded-xl shadow-2xl w-[90%] max-w-[400px] p-5 space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between">
@@ -638,6 +653,11 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                   <div className="space-y-1.5">
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
+                        role="progressbar"
+                        aria-valuenow={generationProgress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Generation progress: ${generationProgress}%`}
                         className="h-full rounded-full bg-green-500 transition-all duration-300 ease-linear"
                         style={{ width: `${generationProgress}%` }}
                       />
@@ -687,6 +707,7 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
                   </p>
                 </div>
               </div>
+              </FocusTrap>
             )}
           </div>
         )}

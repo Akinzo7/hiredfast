@@ -300,32 +300,34 @@ export default function InterviewSessionPage() {
         </div>
 
         {/* Video cards */}
-        <div className="px-4 grid grid-cols-2 gap-3 shrink-0">
+        <div className="px-4 flex flex-row items-center justify-center gap-2 w-full max-[480px]:grid-cols-none sm:grid min-[480px]:grid-cols-2 min-[480px]:gap-3 shrink-0">
           {/* You card */}
           <div className={cn(
-            "rounded-2xl border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-h-[140px] sm:min-h-[180px] transition-all",
+            "rounded-full max-[480px]:h-12 max-[480px]:px-2 max-[480px]:flex-row min-[480px]:rounded-2xl border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-[480px]:min-h-[140px] sm:min-h-[180px] transition-all flex-1 max-[480px]:max-w-[140px]",
             isRecording
               ? "border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
               : "border-border"
           )}>
             <div className={cn(
-              "h-12 w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-muted mb-3 ring-2 transition-all",
+              "h-8 w-8 min-[480px]:h-12 min-[480px]:w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-muted min-[480px]:mb-3 ring-2 transition-all shrink-0",
               isRecording ? "ring-green-500 ring-offset-2 ring-offset-background" : "ring-transparent"
             )}>
               <img src={USER_AVATAR} alt="You" className="h-full w-full object-cover" />
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-foreground">You</p>
-            <p className="text-[10px] text-muted-foreground">Interview Candidate</p>
+            <div className="max-[480px]:ml-2 max-[480px]:flex-1 min-w-0 flex flex-col items-center max-[480px]:items-start">
+              <p className="text-xs sm:text-sm font-semibold text-foreground truncate max-[480px]:text-[10px]">You</p>
+              <p className="text-[10px] text-muted-foreground max-[480px]:hidden">Interview Candidate</p>
+            </div>
           </div>
 
           {/* Emilia card */}
-          <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-h-[140px] sm:min-h-[180px] relative">
+          <div className="rounded-full max-[480px]:h-12 max-[480px]:px-2 max-[480px]:flex-row min-[480px]:rounded-2xl border border-border bg-card p-3 sm:p-4 flex flex-col items-center justify-center min-[480px]:min-h-[140px] sm:min-h-[180px] relative flex-1 max-[480px]:max-w-[140px]">
             {(status === "generating" || isSpeaking) && (
-              <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+              <span className="absolute top-0 right-0 max-[480px]:-translate-y-1/2 min-[480px]:top-3 min-[480px]:right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white z-10">
                 Active
               </span>
             )}
-            <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-slate-700 mb-3 ring-2 ring-transparent flex items-center justify-center">
+            <div className="h-8 w-8 min-[480px]:h-12 min-[480px]:w-12 sm:h-16 sm:w-16 rounded-full overflow-hidden bg-slate-700 min-[480px]:mb-3 ring-2 ring-transparent flex items-center justify-center shrink-0 relative">
               {imgError ? (
                 <span className="text-lg font-bold text-muted-foreground">EZ</span>
               ) : (
@@ -338,15 +340,17 @@ export default function InterviewSessionPage() {
               )}
               {status === "generating" && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-blue-500/30 animate-ping" />
+                  <div className="h-8 w-8 min-[480px]:h-12 min-[480px]:w-12 sm:h-16 sm:w-16 rounded-full border-2 border-blue-500/30 animate-ping" />
                 </div>
               )}
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-foreground">{INTERVIEWER_NAME}</p>
-            <p className="text-[10px] text-muted-foreground">{jobTitle || "Interviewer"}</p>
+            <div className="max-[480px]:ml-2 max-[480px]:flex-1 min-w-0 flex flex-col items-center max-[480px]:items-start">
+              <p className="text-xs sm:text-sm font-semibold text-foreground truncate max-[480px]:text-[10px]">{INTERVIEWER_NAME}</p>
+              <p className="text-[10px] text-muted-foreground max-[480px]:hidden">{jobTitle || "Interviewer"}</p>
+            </div>
 
             {/* Card action buttons */}
-            <div className="absolute bottom-3 left-3 right-3 flex justify-between">
+            <div className="max-[480px]:hidden absolute bottom-3 left-3 right-3 flex justify-between">
               <button
                 onClick={() => setErrorBanner("Regenerating question...")}
                 className="h-7 w-7 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-colors"
@@ -463,6 +467,8 @@ export default function InterviewSessionPage() {
             <button
               onClick={toggleRecording}
               disabled={status !== "active"}
+              aria-pressed={isRecording}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
               className={cn(
                 "h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-40",
                 isRecording
@@ -537,6 +543,16 @@ export default function InterviewSessionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Screen reader live region for mic recording state */}
+      <div
+        role="status"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isRecording ? "Recording" : "Stopped"}
+      </div>
     </div>
   )
 }
