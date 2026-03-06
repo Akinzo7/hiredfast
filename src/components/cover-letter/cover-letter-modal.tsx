@@ -133,6 +133,18 @@ export function CoverLetterModal({ children }: CoverLetterModalProps) {
     setIsGenerating(false)
   }, [open])
 
+  // Cleanup interval and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+      if (abortRef.current) {
+        abortRef.current.abort()
+      }
+    }
+  }, []) // empty deps = runs cleanup only on unmount
+
   // Fetch jobs
   useEffect(() => {
     if (!open || !user) return

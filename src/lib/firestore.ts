@@ -9,6 +9,7 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  getCountFromServer,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { ResumeData } from "@/hooks/use-resume-builder"
@@ -43,6 +44,12 @@ export async function getResumes(userId: string) {
       updatedAt: Timestamp
     }),
   }))
+}
+
+export async function getResumeCount(userId: string): Promise<number> {
+  const ref = collection(db, "users", userId, "resumes")
+  const snapshot = await getCountFromServer(ref)
+  return snapshot.data().count
 }
 
 // ---- INTERVIEWS ----

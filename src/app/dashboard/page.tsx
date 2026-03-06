@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FileText, Mic, Mail, ArrowRight } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { getResumes, getInterviews, getCoverLetters } from "@/lib/firestore"
+import { getResumeCount, getInterviews, getCoverLetters } from "@/lib/firestore"
 import { cn } from "@/lib/utils"
 import { Timestamp } from "firebase/firestore"
 
@@ -19,12 +19,12 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return
     Promise.all([
-      getResumes(user.uid),
+      getResumeCount(user.uid),
       getInterviews(user.uid),
       getCoverLetters(user.uid),
-    ]).then(([resumes, interviews, letters]) => {
+    ]).then(([resumeCount, interviews, letters]) => {
       setCounts({
-        resumes: resumes.length,
+        resumes: resumeCount,
         interviews: interviews.length,
         letters: letters.length,
       })

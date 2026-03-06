@@ -25,68 +25,72 @@ export type InterviewStatus = "idle" | "active" | "generating" | "completed"
 export function useInterview() {
   const [status, setStatus] = useState<InterviewStatus>("idle")
   const [messages, setMessages] = useState<Message[]>([])
+  // Single source of truth for synchronous API reads
   const messagesRef = useRef<Message[]>([])
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0)
 
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0)
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData | null>(null)
   const [jobDescription, setJobDescription] = useState<string>("")
   const [resumeText, setResumeText] = useState<string>("")
-  
+
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
+  // Single AbortController for all in-flight fetch requests
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   const totalQuestions = 5
 
-  // Load resume data and job description from localStorage
+  // Load data from localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-  
-    try {
-      // Read interview-specific resume text (from setup flow)
-      const interviewResumeText = localStorage.getItem("hiredfast_interview_resume_text")
-      if (interviewResumeText) {
-        setResumeText(interviewResumeText)
-      }
+    if (typeof window === "undefined") return
 
-      // Read structured resume data
+    try {
+      const interviewResumeText = localStorage.getItem("hiredfast_interview_resume_text")
+      if (interviewResumeText) setResumeText(interviewResumeText)
+
       const savedResumeData = localStorage.getItem("hiredfast_resume_data")
       if (savedResumeData) {
         try {
           setResumeData(JSON.parse(savedResumeData))
-        } catch (e) {
-          console.warn("Corrupted resume data in localStorage, clearing.")
+        } catch {
           localStorage.removeItem("hiredfast_resume_data")
         }
       }
 
-      // Read job description: prefer interview-specific, fall back to cover letter one
       const interviewJD = localStorage.getItem("hiredfast_interview_job_description")
-      const savedJobDescription = localStorage.getItem("hiredfast_job_description")
-      if (interviewJD) {
-        setJobDescription(interviewJD)
-      } else if (savedJobDescription) {
-        setJobDescription(savedJobDescription)
-      }
+      const savedJD = localStorage.getItem("hiredfast_job_description")
+      if (interviewJD) setJobDescription(interviewJD)
+      else if (savedJD) setJobDescription(savedJD)
     } catch (error) {
       console.error("Failed to load data from localStorage:", error)
     }
   }, [])
 
+  // Cleanup: abort any in-flight request and stop speech on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
+
   const stopSpeaking = useCallback(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel()
       setIsSpeaking(false)
     }
   }, [])
 
-  useEffect(() => {
-    // Cleanup function runs when component unmounts
-    return () => {
-      stopSpeaking();
-    };
-  }, [stopSpeaking]);
-
-  const addMessage = (role: "ai" | "user", content: string) => {
+  /**
+   * addMessage — pushes to the ref first (synchronous),
+   * then schedules a re-render from the ref's contents.
+   * This ensures messagesRef.current is always the ground truth
+   * for the next API call, regardless of React batching.
+   */
+  const addMessage = useCallback((role: "ai" | "user", content: string): Message => {
     const newMessage: Message = {
       id: crypto.randomUUID(),
       role,
@@ -94,32 +98,32 @@ export function useInterview() {
       timestamp: new Date(),
     }
     messagesRef.current = [...messagesRef.current, newMessage]
-    setMessages([...messagesRef.current])
+    setMessages(messagesRef.current)
     return newMessage
-  }
+  }, [])
 
-  const speak = (text: string) => {
-    if (!window.speechSynthesis) return
-
-    // Cancel any ongoing speech
+  const speak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return
     window.speechSynthesis.cancel()
-
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = 0.9
     utterance.pitch = 1
     utterance.volume = 1
-
     utterance.onstart = () => setIsSpeaking(true)
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)
-
     speechSynthesisRef.current = utterance
     window.speechSynthesis.speak(utterance)
-  }
+  }, [])
 
+  const startInterview = useCallback(async () => {
+    // Abort any previous in-flight request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
 
-  const startInterview = async () => {
     setStatus("generating")
+    // Reset ref and state together
+    messagesRef.current = []
     setMessages([])
     setCurrentQuestionNumber(1)
     setPerformanceData(null)
@@ -134,36 +138,41 @@ export function useInterview() {
           jobDescription,
           questionNumber: 1,
         }),
+        signal: abortControllerRef.current.signal,
       })
 
       if (!response.ok) throw new Error("Failed to start interview")
 
       const data = await response.json()
-      const aiMessage = addMessage("ai", data.message)
+      addMessage("ai", data.message)
       setStatus("active")
-      
-      // Speak the greeting
       speak(data.message)
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return
       console.error("Error starting interview:", error)
       setStatus("idle")
     }
-  }
+  }, [resumeText, resumeData, jobDescription, addMessage, speak])
 
-  const submitAnswer = async (answer: string) => {
+  const submitAnswer = useCallback(async (answer: string) => {
     if (!answer.trim() || status !== "active") return
 
-    // Add user message
+    // Push user message into ref BEFORE the fetch so the history is complete
     addMessage("user", answer)
     setStatus("generating")
 
-    try {
-      const nextQuestionNumber = currentQuestionNumber + 1
+    // Abort any previous in-flight request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
 
+    const nextQuestionNumber = currentQuestionNumber + 1
+
+    try {
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // Read from ref — always synchronously up-to-date
           conversationHistory: messagesRef.current.map((m) => ({
             role: m.role,
             content: m.content,
@@ -173,6 +182,7 @@ export function useInterview() {
           jobDescription,
           questionNumber: nextQuestionNumber,
         }),
+        signal: abortControllerRef.current.signal,
       })
 
       if (!response.ok) throw new Error("Failed to get next question")
@@ -180,31 +190,32 @@ export function useInterview() {
       const data = await response.json()
 
       if (data.isComplete && data.performanceData) {
-        // Interview completed
         setPerformanceData(data.performanceData)
         setStatus("completed")
         addMessage("ai", data.message)
         speak(data.message)
       } else {
-        // Next question
         addMessage("ai", data.message)
         setCurrentQuestionNumber(nextQuestionNumber)
         setStatus("active")
         speak(data.message)
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return
       console.error("Error submitting answer:", error)
       setStatus("active")
     }
-  }
+  }, [status, currentQuestionNumber, resumeText, resumeData, jobDescription, addMessage, speak])
 
-  const resetInterview = () => {
+  const resetInterview = useCallback(() => {
+    abortControllerRef.current?.abort()
+    messagesRef.current = []
     setStatus("idle")
     setMessages([])
     setCurrentQuestionNumber(0)
     setPerformanceData(null)
     stopSpeaking()
-  }
+  }, [stopSpeaking])
 
   const saveResults = useCallback((data: PerformanceData) => {
     try {

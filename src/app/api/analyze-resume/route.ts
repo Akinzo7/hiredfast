@@ -133,6 +133,30 @@ Use this exact structure:
       throw new Error("Invalid response structure from AI")
     }
 
+    // Per-category structure validation
+    for (const cat of analysisResult.categories) {
+      if (
+        typeof cat.name !== "string" ||
+        typeof cat.score !== "number" ||
+        typeof cat.maxScore !== "number" ||
+        !Array.isArray(cat.feedback)
+      ) {
+        throw new Error("Invalid category structure in AI response")
+      }
+    }
+
+    // Clamp each category score and recompute totalScore from actual values
+    analysisResult.categories = analysisResult.categories.map(
+      (cat: { name: string; score: number; maxScore: number; feedback: string[] }) => ({
+        ...cat,
+        score: Math.max(0, Math.min(cat.maxScore, Math.round(cat.score))),
+      })
+    )
+    analysisResult.totalScore = analysisResult.categories.reduce(
+      (sum: number, cat: { score: number }) => sum + cat.score,
+      0
+    )
+
     return NextResponse.json(analysisResult)
   } catch (error) {
     console.error("Resume Analysis Error:", error)

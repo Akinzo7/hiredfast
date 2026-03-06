@@ -31,14 +31,16 @@ export default function ResumesPage() {
     setEditError(null)
     if (resume.data) {
       try {
-        localStorage.setItem(
-          "hiredfast_resume_data",
-          JSON.stringify(resume.data)
-        )
+        const serialized = JSON.stringify(resume.data)
+        // Only write if the data has actual content beyond an empty object
+        if (serialized && serialized !== "{}") {
+          localStorage.setItem("hiredfast_resume_data", serialized)
+        }
       } catch (err) {
         console.error("Failed to write resume to localStorage:", err)
-        setEditingId(null)
-        setEditError("Unable to open this resume — browser storage is full or unavailable.")
+        setEditError(
+          "Unable to open this resume — browser storage is full or unavailable."
+        )
         return
       }
     }

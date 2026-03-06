@@ -395,6 +395,11 @@ export function PreviewPanel() {
   const circumference = 2 * Math.PI * 42
   const strokeDashoffset = circumference - (progress / 100) * circumference
 
+  const renderedLayout = useMemo(
+    () => renderLayout(templateId, resumeData, accentColor, hiddenSections),
+    [templateId, resumeData, accentColor, hiddenSections]
+  )
+
   const resumeStyles = useMemo(
     () => ({
       width: "210mm",
@@ -682,7 +687,7 @@ export function PreviewPanel() {
         )}
 
         <div ref={resumeRef} className="bg-white shadow-2xl origin-top transition-transform duration-200" style={resumeStyles}>
-          {renderLayout(templateId, resumeData, accentColor, hiddenSections)}
+          {renderedLayout}
         </div>
       </div>
 

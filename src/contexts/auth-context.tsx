@@ -16,6 +16,8 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
 import { auth, db, googleProvider, facebookProvider } from "@/lib/firebase"
 
+const initializedUids = new Set<string>()
+
 interface AuthContextType {
   user: User | null
   loading: boolean
@@ -37,17 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Create user doc in Firestore on first login
       if (firebaseUser) {
-        const userRef = doc(db, "users", firebaseUser.uid)
-        const snap = await getDoc(userRef)
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            uid: firebaseUser.uid,
-            name: firebaseUser.displayName,
-            email: firebaseUser.email,
-            image: firebaseUser.photoURL,
-            plan: "free",
-            createdAt: serverTimestamp(),
-          })
+        if (!initializedUids.has(firebaseUser.uid)) {
+          const userRef = doc(db, "users", firebaseUser.uid)
+          const snap = await getDoc(userRef)
+          if (!snap.exists()) {
+            await setDoc(userRef, {
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName,
+              email: firebaseUser.email,
+              image: firebaseUser.photoURL,
+              plan: "free",
+              createdAt: serverTimestamp(),
+            })
+          }
+          initializedUids.add(firebaseUser.uid)
         }
       }
     })
