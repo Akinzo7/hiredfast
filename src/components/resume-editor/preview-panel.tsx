@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
-import { useDebounce } from "use-debounce"
 import {
   AlignJustify,
   ChevronDown,
@@ -182,7 +181,6 @@ export function PreviewPanel() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [scoreCategories, setScoreCategories] = useState<ScoreCategory[]>([])
 
-  const [debouncedResumeData] = useDebounce(resumeData, 3000)
 
   const resumeRef = useRef<HTMLDivElement | null>(null)
   const colorPickerRef = useRef<HTMLDivElement | null>(null)
@@ -292,11 +290,13 @@ export function PreviewPanel() {
   }, [templateId, accentColor, lineSpacing, fontSize, font, preferencesLoaded])
 
   useEffect(() => {
+    if (analysisRefreshToken === 0) return // Don't auto-run on mount
+
     const controller = new AbortController()
     let isMounted = true
 
     const runAnalysis = async () => {
-      const resumeText = serializeResumeToText(debouncedResumeData)
+      const resumeText = serializeResumeToText(resumeData)
       if (resumeText.length < 100) {
         if (isMounted) {
           setAiScore(null)
@@ -327,15 +327,9 @@ export function PreviewPanel() {
           setScoreCategories(result.categories)
         }
       } catch (error) {
-        // AbortError means a new analysis run is already starting (dep change)
-        // or the component unmounted — either way isMounted handles cleanup below
         if (error instanceof DOMException && error.name === "AbortError") return
-        // For any other error, reset the spinner if still mounted
         if (isMounted) setIsAnalyzing(false)
       } finally {
-        // Only reset spinner here if we weren't aborted AND component is still mounted.
-        // If aborted due to dep change, the next effect run immediately sets it true again.
-        // If aborted due to unmount, isMounted is false so we skip the setState call.
         if (!controller.signal.aborted && isMounted) {
           setIsAnalyzing(false)
         }
@@ -345,11 +339,11 @@ export function PreviewPanel() {
     void runAnalysis()
 
     return () => {
-      isMounted = false      // prevents all setState calls after this point
-      controller.abort()     // cancels any in-flight fetch
-      setIsAnalyzing(false)  // explicitly resets spinner on unmount or dep change
+      isMounted = false
+      controller.abort()
+      setIsAnalyzing(false)
     }
-  }, [debouncedResumeData, analysisRefreshToken])
+  }, [analysisRefreshToken]) // ONLY re-run when user clicks Recalculate
 
   useEffect(() => {
     const onMouseDown = (event: MouseEvent) => {

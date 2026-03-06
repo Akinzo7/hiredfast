@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { getUserProfile, updateUserProfile } from "@/lib/firestore"
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"
+import { storage } from "@/lib/firebase"
 import {
   User,
   Mail,
@@ -24,7 +26,7 @@ export default function SettingsPage() {
   const [city, setCity] = useState("")
   const [linkedin, setLinkedin] = useState("")
 
-  const [photoBase64, setPhotoBase64] = useState("")
+  const [photoURL, setPhotoURL] = useState("")
   const [localPhotoPreview, setLocalPhotoPreview] = useState("")
 
   const [isSaving, setIsSaving] = useState(false)
@@ -46,15 +48,16 @@ export default function SettingsPage() {
         setPhone(profile?.phone || "")
         setCity(profile?.city || "")
         setLinkedin(profile?.linkedin || "")
-        setPhotoBase64(profile?.photoBase64 || "")
+        // Support both old base64 field and new URL field during migration
+        setPhotoURL(profile?.photoURL || profile?.photoBase64 || "")
       })
       .finally(() => {
         setIsLoading(false)
       })
   }, [user])
 
-  const avatarSrc = localPhotoPreview || photoBase64 || user?.photoURL || null
-  const showRemoveButton = !!(localPhotoPreview || photoBase64)
+  const avatarSrc = localPhotoPreview || photoURL || user?.photoURL || null
+  const showRemoveButton = !!(localPhotoPreview || photoURL)
   const initials = (fullName || user?.displayName || "U").trim().charAt(0).toUpperCase()
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,34 +76,23 @@ export default function SettingsPage() {
 
     setSaveError(null)
 
+    // Show local preview immediately
     const objectUrl = URL.createObjectURL(file)
     setLocalPhotoPreview(objectUrl)
 
-    if (typeof window === "undefined") return
-
-    const canvas = document.createElement("canvas")
-    const ctx = canvas.getContext("2d")
-    const img = new Image()
-
-    img.onload = () => {
-      const maxSize = 200
-      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
-      canvas.width = Math.max(1, Math.floor(img.width * ratio))
-      canvas.height = Math.max(1, Math.floor(img.height * ratio))
-      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
-      const base64 = canvas.toDataURL("image/jpeg", 0.8)
-      setPhotoBase64(base64)
+    try {
+      if (!user) return
+      const fileRef = storageRef(storage, `profile-photos/${user.uid}`)
+      await uploadBytes(fileRef, file, { contentType: file.type })
+      const downloadURL = await getDownloadURL(fileRef)
+      setPhotoURL(downloadURL)
       URL.revokeObjectURL(objectUrl)
-      setLocalPhotoPreview(base64)
-    }
-
-    img.onerror = () => {
-      setSaveError("Failed to process the selected image.")
+      setLocalPhotoPreview("") // Clear preview, use the real URL now
+    } catch (err) {
+      setSaveError("Failed to upload photo. Please try again.")
       URL.revokeObjectURL(objectUrl)
       setLocalPhotoPreview("")
     }
-
-    img.src = objectUrl
   }
 
   const handleSave = async () => {
@@ -115,7 +107,7 @@ export default function SettingsPage() {
         phone,
         city,
         linkedin,
-        photoBase64,
+        photoURL,
       })
 
       try {
@@ -177,7 +169,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => {
                   setLocalPhotoPreview("")
-                  setPhotoBase64("")
+                  setPhotoURL("")
                   if (fileInputRef.current) fileInputRef.current.value = ""
                 }}
                 className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center absolute -top-1 -right-1 cursor-pointer hover:bg-red-600 transition-colors z-10"

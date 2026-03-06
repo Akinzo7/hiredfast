@@ -28,9 +28,6 @@ export function useInterview() {
   const messagesRef = useRef<Message[]>([])
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0)
 
-  useEffect(() => {
-    messagesRef.current = messages
-  }, [messages])
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData | null>(null)
@@ -91,16 +88,13 @@ export function useInterview() {
 
   const addMessage = (role: "ai" | "user", content: string) => {
     const newMessage: Message = {
-      id: crypto.randomUUID(), // Use browser's crypto API
+      id: crypto.randomUUID(),
       role,
       content,
       timestamp: new Date(),
     }
-    setMessages((prev) => {
-      const next = [...prev, newMessage]
-      messagesRef.current = next
-      return next
-    })
+    messagesRef.current = [...messagesRef.current, newMessage]
+    setMessages([...messagesRef.current])
     return newMessage
   }
 

@@ -159,7 +159,7 @@ export async function updateUserProfile(
     phone?: string
     city?: string
     linkedin?: string
-    photoBase64?: string
+    photoURL?: string
   }
 ): Promise<void> {
   const userRef = doc(db, "users", userId)
@@ -172,6 +172,7 @@ export async function getUserProfile(
   phone?: string
   city?: string
   linkedin?: string
+  photoURL?: string
   photoBase64?: string
   name?: string
   email?: string
@@ -183,6 +184,7 @@ export async function getUserProfile(
     phone?: string
     city?: string
     linkedin?: string
+    photoURL?: string
     photoBase64?: string
     name?: string
     email?: string

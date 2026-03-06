@@ -18,7 +18,7 @@ import {
   Send,
   X,
 } from "lucide-react"
-import { useInterview } from "@/hooks/use-interview"
+import { useInterview, type PerformanceData } from "@/hooks/use-interview"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
@@ -66,7 +66,14 @@ export default function InterviewSessionPage() {
   const hasStarted = useRef(false)
   const recognitionRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const resultsNavigatedRef = useRef(false)  // prevents double-navigation to results
+  const resultsNavigatedRef = useRef(false)
+
+  const navigateToResults = useCallback((data: PerformanceData) => {
+    if (resultsNavigatedRef.current) return
+    resultsNavigatedRef.current = true
+    saveResults(data)
+    router.push("/interview/results")
+  }, [router, saveResults])
   const prevStatusRef = useRef(status)
 
   // Read from localStorage
@@ -112,14 +119,9 @@ export default function InterviewSessionPage() {
   // Navigate to results when complete
   useEffect(() => {
     if (status === "completed" && performanceData) {
-      if (!resultsNavigatedRef.current) {
-        resultsNavigatedRef.current = true
-        saveResults(performanceData)
-        const t = setTimeout(() => router.push("/interview/results"), 1500)
-        return () => clearTimeout(t)
-      }
+      navigateToResults(performanceData)
     }
-  }, [status, performanceData, router, saveResults])
+  }, [status, performanceData, navigateToResults])
 
   // Detect error (status went from generating to active without new message)
   useEffect(() => {
@@ -229,16 +231,8 @@ export default function InterviewSessionPage() {
     setShowEndConfirm(false)
     stopSpeaking()
 
-    // If the interview has already completed and results are available,
-    // route to results — do NOT discard them by going home.
-    // This prevents a race where the user confirms "End" at the same moment
-    // the completion useEffect fires, causing two competing navigations.
     if (status === "completed" && performanceData) {
-      if (!resultsNavigatedRef.current) {
-        resultsNavigatedRef.current = true
-        saveResults(performanceData)
-        router.push("/interview/results")
-      }
+      navigateToResults(performanceData)
     } else {
       router.push("/")
     }

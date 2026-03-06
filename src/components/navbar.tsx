@@ -21,7 +21,7 @@ export function Navbar() {
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
   const uid = user?.uid ?? null  // stable primitive — does not change on token refresh
-  const [profileData, setProfileData] = useState<{ uid: string; photoBase64: string } | null>(null)
+  const [profileData, setProfileData] = useState<{ uid: string; photoSrc: string } | null>(null)
 
   useEffect(() => {
     // Depend on uid (a stable string primitive) rather than the user object.
@@ -41,14 +41,14 @@ export function Navbar() {
         if (!cancelled) {
           setProfileData({
             uid,
-            photoBase64: profile?.photoBase64?.trim() || "",
+            photoSrc: profile?.photoURL || profile?.photoBase64?.trim() || "",
           })
         }
       } catch {
         if (!cancelled) {
           setProfileData({
             uid,
-            photoBase64: "",
+            photoSrc: "",
           })
         }
       }
@@ -66,7 +66,7 @@ export function Navbar() {
     router.push("/")
   }
 
-  const firestorePhoto = user && profileData?.uid === user.uid ? profileData.photoBase64 : ""
+  const firestorePhoto = user && profileData?.uid === user.uid ? profileData.photoSrc : ""
   const avatarSrc = firestorePhoto || user?.photoURL || ""
 
   return (

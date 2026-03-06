@@ -14,6 +14,7 @@ export default function ResumesPage() {
   const [resumes, setResumes] = useState<any[]>([])
   const [loaded, setLoaded] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -27,7 +28,7 @@ export default function ResumesPage() {
     ts ? ts.toDate().toLocaleDateString() : ""
 
   const handleEdit = (resume: typeof resumes[0]) => {
-    setEditingId(resume.id)
+    setEditError(null)
     if (resume.data) {
       try {
         localStorage.setItem(
@@ -36,8 +37,12 @@ export default function ResumesPage() {
         )
       } catch (err) {
         console.error("Failed to write resume to localStorage:", err)
+        setEditingId(null)
+        setEditError("Unable to open this resume — browser storage is full or unavailable.")
+        return
       }
     }
+    setEditingId(resume.id)
     router.push("/resume/editor")
   }
 
@@ -50,6 +55,12 @@ export default function ResumesPage() {
           <Plus className="h-4 w-4" /> New Resume
         </Link>
       </div>
+
+      {editError && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+          {editError}
+        </div>
+      )}
 
       {loaded && resumes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-2xl">
