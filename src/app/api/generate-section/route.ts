@@ -1,4 +1,6 @@
 ﻿import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import { adminAuth } from "@/lib/firebase-admin"
 import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini"
 
 const stripCodeFences = (value: string) =>
@@ -8,6 +10,19 @@ const stripCodeFences = (value: string) =>
     .trim()
 
 export async function POST(req: Request) {
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get("firebase-session")?.value
+
+  if (!sessionCookie) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    await adminAuth.verifySessionCookie(sessionCookie, true)
+  } catch (error) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   if (!genAI) {
     return NextResponse.json({ error: "Gemini API key is not configured." }, { status: 500 })
   }

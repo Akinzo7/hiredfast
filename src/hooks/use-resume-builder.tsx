@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
+import { useDebounce } from "use-debounce"
 
 export type ResumeData = {
   personalInfo: {
@@ -239,6 +240,7 @@ const mergeResumeData = (value: unknown): ResumeData => {
 export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData)
+  const [debouncedResumeData] = useDebounce(resumeData, 1000)
   const [isLoaded, setIsLoaded] = useState(false)
   const [hiddenSections, setHiddenSectionsState] = useState<string[]>([])
 
@@ -276,7 +278,7 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
     if (!isLoaded || typeof window === "undefined") return
 
     try {
-      localStorage.setItem("hiredfast_resume_data", JSON.stringify(resumeData))
+      localStorage.setItem("hiredfast_resume_data", JSON.stringify(debouncedResumeData))
       setSaveError(null)
     } catch (error) {
       console.error("Failed to save resume data:", error)
@@ -289,7 +291,7 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
         setSaveError("Storage unavailable.")
       }
     }
-  }, [resumeData, isLoaded])
+  }, [debouncedResumeData, isLoaded])
 
   // Persist hiddenSections to localStorage
   useEffect(() => {

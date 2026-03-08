@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { adminAuth } from "@/lib/firebase-admin";
 import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini";
+import { Schema, SchemaType } from "@google/generative-ai";
 
 export async function POST(req: Request) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("firebase-session")?.value;
+
+  if (!sessionCookie) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await adminAuth.verifySessionCookie(sessionCookie, true);
+  } catch (error) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!genAI) {
     return NextResponse.json(
       { error: "Gemini API key is not configured. Please add GEMINI_API_KEY to your .env.local file." },
@@ -73,12 +89,38 @@ Return your response as a JSON object with this structure:
 Return ONLY valid JSON, no markdown formatting or additional text.
       `;
 
-      const result = await model.generateContent(analysisPrompt);
-      const response = await result.response;
-      let analysisText = response.text();
+      const schema: Schema = {
+        type: SchemaType.OBJECT,
+        properties: {
+          score: { type: SchemaType.NUMBER },
+          strengths: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          },
+          betterAnswer: {
+            type: SchemaType.OBJECT,
+            properties: {
+              originalQuestion: { type: SchemaType.STRING },
+              userAnswer: { type: SchemaType.STRING },
+              improvedAnswer: { type: SchemaType.STRING }
+            },
+            required: ["originalQuestion", "userAnswer", "improvedAnswer"]
+          }
+        },
+        required: ["score", "strengths", "betterAnswer"]
+      };
 
-      // Clean up markdown formatting if present
-      analysisText = analysisText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const analysisModel = genAI.getGenerativeModel({
+        model: GEMINI_MODEL_FLASH,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        }
+      });
+
+      const result = await analysisModel.generateContent(analysisPrompt);
+      const response = await result.response;
+      const analysisText = response.text();
 
       const performanceData = JSON.parse(analysisText);
 

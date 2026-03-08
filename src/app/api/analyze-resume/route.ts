@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import { adminAuth } from "@/lib/firebase-admin"
 import { GEMINI_MODEL_FLASH, genAI } from "@/lib/gemini"
+import { Schema, SchemaType } from "@google/generative-ai"
 
 export async function POST(req: Request) {
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get("firebase-session")?.value
+
+  if (!sessionCookie) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    await adminAuth.verifySessionCookie(sessionCookie, true)
+  } catch (error) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   if (!genAI) {
     return NextResponse.json(
       { error: "Gemini API key is not configured." },
@@ -19,7 +35,37 @@ export async function POST(req: Request) {
       )
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_FLASH })
+    const schema: Schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        totalScore: { type: SchemaType.NUMBER },
+        categories: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              score: { type: SchemaType.NUMBER },
+              maxScore: { type: SchemaType.NUMBER },
+              feedback: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING }
+              }
+            },
+            required: ["name", "score", "maxScore", "feedback"]
+          }
+        }
+      },
+      required: ["totalScore", "categories"]
+    };
+
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL_FLASH,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      }
+    });
 
     const prompt = `
 You are an expert resume analyst and career coach with years of experience 
@@ -117,10 +163,7 @@ Use this exact structure:
 
     const result = await model.generateContent(prompt)
     const response = await result.response
-    let text = response.text()
-
-    // Strip any markdown code fences if present
-    text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
+    const text = response.text()
 
     const analysisResult = JSON.parse(text)
 
