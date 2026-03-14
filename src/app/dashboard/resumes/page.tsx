@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { FileText, Plus } from "lucide-react"
+import { FileText, Plus, Trash2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { getResumes } from "@/lib/firestore"
+import { getResumes, deleteResume } from "@/lib/firestore"
 import { Timestamp } from "firebase/firestore"
 
 export default function ResumesPage() {
-  const router = useRouter()
   const { user } = useAuth()
   const [resumes, setResumes] = useState<any[]>([])
   const [loaded, setLoaded] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -27,27 +24,22 @@ export default function ResumesPage() {
   const formatDate = (ts: Timestamp | undefined) =>
     ts ? ts.toDate().toLocaleDateString() : ""
 
-  const handleEdit = (resume: typeof resumes[0]) => {
-    setEditError(null)
-    if (resume.data) {
-      try {
-        const serialized = JSON.stringify(resume.data)
-        // Only write if the data has actual content beyond an empty object
-        if (!serialized || serialized === "{}") {
-          setEditError("This resume has no content to edit.")
-          return
-        }
-        localStorage.setItem("hiredfast_resume_data", serialized)
-        // Success
-        setEditingId(resume.id)
-        router.push("/resume/editor")
-      } catch (err) {
-        console.error("Failed to write resume to localStorage:", err)
-        setEditError(
-          "Unable to open this resume — browser storage is full or unavailable."
-        )
-        return
-      }
+  const handleDelete = async (resumeId: string, resumeTitle: string) => {
+    if (!user) return
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${resumeTitle}"? This action cannot be undone.`
+    )
+    if (!confirmed) return
+
+    setDeletingId(resumeId)
+    try {
+      await deleteResume(user.uid, resumeId)
+      setResumes((prev) => prev.filter((r) => r.id !== resumeId))
+    } catch (error) {
+      console.error("Failed to delete resume:", error)
+      alert("Failed to delete resume. Please try again.")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -60,12 +52,6 @@ export default function ResumesPage() {
           <Plus className="h-4 w-4" /> New Resume
         </Link>
       </div>
-
-      {editError && (
-        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
-          {editError}
-        </div>
-      )}
 
       {loaded && resumes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed rounded-2xl">
@@ -89,15 +75,22 @@ export default function ResumesPage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {formatDate(resume.updatedAt)}
               </p>
-              <button
-                onClick={() => handleEdit(resume)}
-                disabled={editingId === resume.id}
-                className="mt-3 flex items-center justify-center h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors w-full disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {editingId === resume.id ? (
-                  <span className="flex items-center gap-1.5">
+              <div className="mt-3 flex items-center gap-2">
+                <Link
+                  href={`/resume/editor?id=${resume.id}`}
+                  className="flex-1 flex items-center justify-center h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={() => handleDelete(resume.id, resume.title)}
+                  disabled={deletingId === resume.id}
+                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  aria-label={`Delete ${resume.title}`}
+                >
+                  {deletingId === resume.id ? (
                     <svg
-                      className="animate-spin h-3 w-3 text-white"
+                      className="animate-spin h-3.5 w-3.5"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -114,12 +107,11 @@ export default function ResumesPage() {
                         d="M4 12a8 8 0 018-8v8z"
                       />
                     </svg>
-                    Opening...
-                  </span>
-                ) : (
-                  "Edit"
-                )}
-              </button>
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
             </div>
           ))}
         </div>

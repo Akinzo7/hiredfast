@@ -22,6 +22,8 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Button } from "@/components/ui/button"
 import { extractTextFromFile } from "@/lib/file-parser"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
+import { saveResume } from "@/lib/firestore"
 
 type AnalysisView = "selection" | "loading" | "results"
 
@@ -128,6 +130,7 @@ export function ResumeAnalysisModal({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<AnalysisView>("selection")
   const [resumes, setResumes] = useState<ResumeItem[]>([])
@@ -220,9 +223,21 @@ export function ResumeAnalysisModal({
         )
       }
 
+      const fileName = file.name.replace(/\.(pdf|docx)$/i, "")
+
+      // Save to Firestore if user is authenticated
+      let resumeDocId = `upload-${Date.now()}`
+      if (user) {
+        try {
+          resumeDocId = await saveResume(user.uid, fileName, { uploadedText: text })
+        } catch (err) {
+          console.error("Failed to save uploaded resume to cloud:", err)
+        }
+      }
+
       const newResume: ResumeItem = {
-        id: `upload-${Date.now()}`,
-        name: file.name.replace(/\.(pdf|docx)$/i, ""),
+        id: resumeDocId,
+        name: fileName,
         text,
         source: "uploaded",
         badge: "Uploaded",

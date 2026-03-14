@@ -1,7 +1,7 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import html2canvas from "html2canvas"
+import { toPng } from "html-to-image"
 import jsPDF from "jspdf"
 import {
   AlignJustify,
@@ -194,31 +194,85 @@ export function PreviewPanel() {
   const handleDownload = async () => {
     if (!resumeRef.current) return
 
+    setIsAnalyzing(true) // Use as a temporary loading state
     try {
-      const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true })
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF("p", "mm", "a4")
-
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width
-
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight)
-      heightLeft -= pdfHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight)
-        heightLeft -= pdfHeight
+      // Small delay to let any rendering settle
+      await new Promise(r => setTimeout(r, 100))
+      
+      const printWindow = window.open("", "_blank")
+      if (!printWindow) {
+        alert("Please allow popups to download your resume.")
+        return
       }
 
-      pdf.save("resume.pdf")
+      const htmlContent = resumeRef.current.innerHTML
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Resume</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=PT+Sans:wght@400;700&family=Raleway:wght@400;700&family=IBM+Plex+Sans:wght@400;700&family=Alegreya:wght@400;700&family=Karla:wght@400;700&family=Bitter:wght@400;700&family=DM+Sans:wght@400;700&family=EB+Garamond:wght@400;700&display=swap');
+              
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              
+              body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-family: ${FONT_FAMILY_MAP[font]};
+                font-size: ${fontSize}pt;
+                line-height: ${lineSpacing};
+              }
+              
+              .resume-container {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                background: white;
+                box-sizing: border-box;
+                position: relative;
+              }
+              
+              /* Reset some tailwind base styles that might conflict */
+              *, ::before, ::after {
+                box-sizing: border-box;
+              }
+              
+              /* Hide UI elements from print */
+              .no-print {
+                display: none !important;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="resume-container">
+              ${htmlContent}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 500);
+                }, 500);
+              };
+            </script>
+          </body>
+        </html>
+      `)
+      
+      printWindow.document.close()
     } catch (error) {
-      console.error("PDF generation failed:", error)
+      console.error("Print generation failed:", error)
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 

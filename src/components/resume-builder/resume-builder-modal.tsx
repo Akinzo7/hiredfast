@@ -1,10 +1,13 @@
-import { ResumeBuilderProvider, useResumeBuilder } from "@/hooks/use-resume-builder"
+import { useResumeBuilder } from "@/hooks/use-resume-builder"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useAuth } from "@/contexts/auth-context"
+import { saveResume } from "@/lib/firestore"
 
 // Placeholder imports for steps - will implement these next
 import { PersonalInfoStep } from "./steps/personal-info-step"
@@ -39,10 +42,12 @@ export function ResumeBuilderModal({ children, open, onOpenChange }: ResumeBuild
 
 function ResumeBuilderContent() {
   const router = useRouter()
-  const { 
-    currentStep, 
-    totalSteps, 
-    nextStep, 
+  const { user } = useAuth()
+  const [isSaving, setIsSaving] = useState(false)
+  const {
+    currentStep,
+    totalSteps,
+    nextStep,
     prevStep,
     resumeData,
     updatePersonalInfo,
@@ -70,8 +75,8 @@ function ResumeBuilderContent() {
       case 5:
         return <ProjectsStep data={resumeData.projects} updateData={setProjects} />
       case 6:
-        return <LanguagesCertificationsStep 
-                  languages={resumeData.languages} 
+        return <LanguagesCertificationsStep
+                  languages={resumeData.languages}
                   certifications={resumeData.certifications}
                   updateLanguages={setLanguages}
                   updateCertifications={setCertifications}
@@ -92,6 +97,24 @@ function ResumeBuilderContent() {
     "Languages & Certs",
     "Associations"
   ]
+
+  const handleFinish = async () => {
+    if (user) {
+      setIsSaving(true)
+      try {
+        const title = resumeData.personalInfo.fullName?.trim() || "Untitled Resume"
+        const newId = await saveResume(user.uid, title, resumeData)
+        router.push(`/resume/editor?id=${newId}`)
+      } catch (error) {
+        console.error("Failed to save resume:", error)
+        router.push("/resume/editor")
+      } finally {
+        setIsSaving(false)
+      }
+    } else {
+      router.push("/resume/editor")
+    }
+  }
 
   return (
     <>
@@ -123,14 +146,17 @@ function ResumeBuilderContent() {
                  Skip
                </Button>
              )}
-             <Button onClick={() => {
-               if (currentStep === totalSteps) {
-                 router.push("/resume/editor")
-               } else {
-                 nextStep()
-               }
-             }}>
-               {currentStep === totalSteps ? "Finish" : "Next"}
+             <Button
+               disabled={isSaving}
+               onClick={() => {
+                 if (currentStep === totalSteps) {
+                   void handleFinish()
+                 } else {
+                   nextStep()
+                 }
+               }}
+             >
+               {isSaving ? "Saving..." : currentStep === totalSteps ? "Finish" : "Next"}
              </Button>
            </div>
         </div>

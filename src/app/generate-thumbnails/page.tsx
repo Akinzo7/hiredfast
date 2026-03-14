@@ -1,8 +1,8 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import html2canvas from "html2canvas"
+import { toPng } from "html-to-image"
 import { doc, setDoc } from "firebase/firestore"
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage"
 import { Button } from "@/components/ui/button"
@@ -47,15 +47,23 @@ export default function GenerateThumbnailsPage() {
           throw new Error("Preview container is not available.")
         }
 
-        const canvas = await html2canvas(previewRef.current, {
-          scale: 2,
+        const dataUrl = await toPng(previewRef.current, {
+          pixelRatio: 2,
           backgroundColor: "#ffffff",
-          useCORS: true,
+          cacheBust: true,
+          fontEmbedCSS: "", // Bypasses the failing cssRules check
         })
 
-        const cropHeight = Math.max(1, Math.floor(canvas.height * 0.45))
+        const img = new Image()
+        img.src = dataUrl
+        await new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+        })
+
+        const cropHeight = Math.max(1, Math.floor(img.height * 0.45))
         const croppedCanvas = document.createElement("canvas")
-        croppedCanvas.width = canvas.width
+        croppedCanvas.width = img.width
         croppedCanvas.height = cropHeight
 
         const context = croppedCanvas.getContext("2d")
@@ -63,7 +71,7 @@ export default function GenerateThumbnailsPage() {
           throw new Error("Failed to create canvas context.")
         }
 
-        context.drawImage(canvas, 0, 0, canvas.width, cropHeight, 0, 0, canvas.width, cropHeight)
+        context.drawImage(img, 0, 0, img.width, cropHeight, 0, 0, img.width, cropHeight)
 
         const blob = await new Promise<Blob | null>((resolve) => {
           croppedCanvas.toBlob(resolve, "image/png")

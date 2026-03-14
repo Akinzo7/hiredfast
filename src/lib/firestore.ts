@@ -9,6 +9,7 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  deleteDoc,
   getCountFromServer,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -50,6 +51,41 @@ export async function getResumeCount(userId: string): Promise<number> {
   const ref = collection(db, "users", userId, "resumes")
   const snapshot = await getCountFromServer(ref)
   return snapshot.data().count
+}
+
+export async function getResume(userId: string, resumeId: string) {
+  const resumeRef = doc(db, "users", userId, "resumes", resumeId)
+  const snap = await getDoc(resumeRef)
+  if (!snap.exists()) return null
+  return {
+    id: snap.id,
+    ...(snap.data() as {
+      title: string
+      data?: ResumeData
+      uploadedText?: string
+      createdAt: Timestamp
+      updatedAt: Timestamp
+    }),
+  }
+}
+
+export async function updateResume(
+  userId: string,
+  resumeId: string,
+  title: string,
+  data: object
+) {
+  const resumeRef = doc(db, "users", userId, "resumes", resumeId)
+  await updateDoc(resumeRef, {
+    title,
+    data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function deleteResume(userId: string, resumeId: string) {
+  const resumeRef = doc(db, "users", userId, "resumes", resumeId)
+  await deleteDoc(resumeRef)
 }
 
 // ---- INTERVIEWS ----

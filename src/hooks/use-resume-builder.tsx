@@ -1,7 +1,8 @@
-﻿"use client"
+"use client"
 
-import { ReactNode, createContext, useContext, useEffect, useState } from "react"
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react"
 import { useDebounce } from "use-debounce"
+import { saveResume, updateResume, getResume } from "@/lib/firestore"
 
 export type ResumeData = {
   personalInfo: {
@@ -56,7 +57,7 @@ export type ResumeData = {
   customSections: Array<{ id: string; title: string; content: string }>
 }
 
-const initialResumeData: ResumeData = {
+export const initialResumeData: ResumeData = {
   personalInfo: {
     fullName: "",
     functionalTitle: "",
@@ -88,6 +89,7 @@ interface ResumeBuilderContextType {
   currentStep: number
   totalSteps: number
   resumeData: ResumeData
+  resumeId: string | null
   isLoaded: boolean
   hiddenSections: string[]
   setHiddenSections: (sections: string[]) => void
@@ -237,45 +239,80 @@ const mergeResumeData = (value: unknown): ResumeData => {
   }
 }
 
-export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
+interface ResumeBuilderProviderProps {
+  children: ReactNode
+  userId?: string | null
+  initialResumeId?: string | null
+}
+
+export function ResumeBuilderProvider({ children, userId, initialResumeId }: ResumeBuilderProviderProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData)
   const [debouncedResumeData] = useDebounce(resumeData, 1000)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [resumeId, setResumeId] = useState<string | null>(initialResumeId ?? null)
   const [hiddenSections, setHiddenSectionsState] = useState<string[]>([])
 
   const [, setSaveError] = useState<string | null>(null)
+  const hasLoadedCloud = useRef(false)
+  const isSaving = useRef(false)
 
+  // Load resume data: from Firestore if resumeId is provided, otherwise from localStorage
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    try {
-      const testKey = "__storage_test__"
-      localStorage.setItem(testKey, testKey)
-      localStorage.removeItem(testKey)
+    if (initialResumeId && userId) {
+      // Load from Firestore
+      hasLoadedCloud.current = false
+      getResume(userId, initialResumeId)
+        .then((doc) => {
+          if (doc?.data) {
+            setResumeData(mergeResumeData(doc.data))
+          }
+          setResumeId(initialResumeId)
+          hasLoadedCloud.current = true
+          setIsLoaded(true)
+        })
+        .catch((error) => {
+          console.error("Failed to load resume from cloud:", error)
+          hasLoadedCloud.current = true
+          setIsLoaded(true)
+        })
+    } else {
+      // Load from localStorage (existing behavior)
+      try {
+        const testKey = "__storage_test__"
+        localStorage.setItem(testKey, testKey)
+        localStorage.removeItem(testKey)
 
-      const savedData = localStorage.getItem("hiredfast_resume_data")
-      if (savedData) {
-        const parsed = JSON.parse(savedData)
-        setResumeData(mergeResumeData(parsed))
-      }
-
-      const savedHiddenSections = localStorage.getItem("hiredfast_hidden_sections")
-      if (savedHiddenSections) {
-        const parsed = JSON.parse(savedHiddenSections)
-        if (Array.isArray(parsed)) {
-          setHiddenSectionsState(parsed.filter((id): id is string => typeof id === "string"))
+        const savedData = localStorage.getItem("hiredfast_resume_data")
+        if (savedData) {
+          const parsed = JSON.parse(savedData)
+          setResumeData(mergeResumeData(parsed))
         }
-      }
-    } catch (error) {
-      console.warn("LocalStorage access denied or unavailable. Running in in-memory mode.", error)
-    } finally {
-      setIsLoaded(true)
-    }
-  }, [])
 
+        const savedHiddenSections = localStorage.getItem("hiredfast_hidden_sections")
+        if (savedHiddenSections) {
+          const parsed = JSON.parse(savedHiddenSections)
+          if (Array.isArray(parsed)) {
+            setHiddenSectionsState(parsed.filter((id): id is string => typeof id === "string"))
+          }
+        }
+      } catch (error) {
+        console.warn("LocalStorage access denied or unavailable. Running in in-memory mode.", error)
+      } finally {
+        hasLoadedCloud.current = true
+        setIsLoaded(true)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialResumeId, userId])
+
+  // Save to localStorage (existing behavior, preserved for non-cloud usage)
   useEffect(() => {
     if (!isLoaded || typeof window === "undefined") return
+    // Skip localStorage writes when operating in cloud mode
+    if (initialResumeId) return
 
     try {
       localStorage.setItem("hiredfast_resume_data", JSON.stringify(debouncedResumeData))
@@ -291,7 +328,37 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
         setSaveError("Storage unavailable.")
       }
     }
-  }, [debouncedResumeData, isLoaded])
+  }, [debouncedResumeData, isLoaded, initialResumeId])
+
+  // Auto-save to Firestore when user is authenticated
+  useEffect(() => {
+    if (!isLoaded || !userId || !hasLoadedCloud.current) return
+    if (isSaving.current) return
+
+    const title = resumeData.personalInfo.fullName?.trim() || "Untitled Resume"
+
+    isSaving.current = true
+    if (resumeId) {
+      // Update existing resume
+      updateResume(userId, resumeId, title, debouncedResumeData)
+        .catch((error) => console.error("Failed to auto-save resume:", error))
+        .finally(() => { isSaving.current = false })
+    } else {
+      // Create new resume
+      saveResume(userId, title, debouncedResumeData)
+        .then((newId) => {
+          setResumeId(newId)
+          // Update URL without full page reload
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href)
+            url.searchParams.set("id", newId)
+            window.history.replaceState({}, "", url.toString())
+          }
+        })
+        .catch((error) => console.error("Failed to save new resume:", error))
+        .finally(() => { isSaving.current = false })
+    }
+  }, [debouncedResumeData, isLoaded, userId, resumeId, resumeData.personalInfo.fullName])
 
   // Persist hiddenSections to localStorage
   useEffect(() => {
@@ -376,6 +443,7 @@ export function ResumeBuilderProvider({ children }: { children: ReactNode }) {
     currentStep,
     totalSteps,
     resumeData,
+    resumeId,
     isLoaded,
     hiddenSections,
     setHiddenSections,
